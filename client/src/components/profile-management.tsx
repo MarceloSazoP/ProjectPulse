@@ -45,7 +45,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { MultiSelect } from "@/components/ui/multi-select";
+import { Checkbox } from "@/components/ui/checkbox";
 
 export function ProfileManagement() {
   const { toast } = useToast();
@@ -255,19 +255,30 @@ export function ProfileManagement() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Permisos</FormLabel>
-                    <FormControl>
-                      <MultiSelect
-                        placeholder="Seleccione permisos..."
-                        options={permissionOptions}
-                        value={field.value?.map(value => ({
-                          label: permissionOptions.find(option => option.value === value)?.label || value,
-                          value
-                        })) || []}
-                        onChange={(selected) => {
-                          field.onChange(selected.map(item => item.value));
-                        }}
-                      />
-                    </FormControl>
+                    <div className="grid grid-cols-2 gap-2 mt-2">
+                      {permissionOptions.map((option) => (
+                        <div key={option.value} className="flex items-center space-x-2">
+                          <Checkbox
+                            id={`permission-${option.value}`}
+                            checked={field.value?.includes(option.value)}
+                            onCheckedChange={(checked) => {
+                              const updatedValue = checked
+                                ? [...(field.value || []), option.value]
+                                : (field.value || []).filter(
+                                    (value) => value !== option.value
+                                  );
+                              field.onChange(updatedValue);
+                            }}
+                          />
+                          <label
+                            htmlFor={`permission-${option.value}`}
+                            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                          >
+                            {option.label}
+                          </label>
+                        </div>
+                      ))}
+                    </div>
                     <FormMessage />
                   </FormItem>
                 )}
