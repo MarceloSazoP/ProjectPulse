@@ -18,10 +18,22 @@ interface BreadcrumbProps {
 export function BreadcrumbNav({ items = [] }: BreadcrumbProps) {
   const [location] = useLocation();
   
-  // Generate breadcrumb items based on current path if none provided
-  const breadcrumbItems = items.length > 0 
-    ? items 
-    : generateBreadcrumbItems(location);
+  // Generate custom breadcrumb items based on current path if none provided
+  let breadcrumbItems = items.length > 0 ? items : [];
+  
+  if (breadcrumbItems.length === 0) {
+    if (location.includes('departments')) {
+      breadcrumbItems = [{ label: 'Departamentos' }];
+    } else if (location.includes('profiles')) {
+      breadcrumbItems = [{ label: 'Perfiles' }];
+    } else if (location.includes('users')) {
+      breadcrumbItems = [{ label: 'Usuarios' }];
+    } else if (location.includes('projects')) {
+      breadcrumbItems = [{ label: 'Proyectos' }];
+    } else {
+      breadcrumbItems = generateBreadcrumbItems(location);
+    }
+  }
 
   return (
     <Breadcrumb className="mb-4">

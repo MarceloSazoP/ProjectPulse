@@ -37,7 +37,14 @@ export default function Dashboard() {
       <Sidebar projects={projects || []} onViewChange={(v) => setView(v)} />
       <main className="flex-1 p-6">
         <BreadcrumbNav />
-        <h1 className="text-2xl font-bold mb-6">Welcome, {user?.username}!</h1>
+        <h1 className="text-2xl font-bold mb-6">
+          {view === 'departments' ? 'Departamentos' : 
+           view === 'profiles' ? 'Perfiles' : 
+           view === 'users' ? 'Usuarios' : 
+           view === 'projects' ? 'Proyectos' : 
+           view === 'dashboard' ? 'Panel de Control' : 
+           `¡Bienvenido, ${user?.username}!`}
+        </h1>
 
         {view === 'projects' && (
           <ProjectManagement />
