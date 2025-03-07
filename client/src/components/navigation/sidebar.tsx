@@ -176,7 +176,6 @@ import {
   LayoutPanelLeft,
   ClipboardList,
   UsersRound,
-  Building2,
   Layout,
   ChevronDown,
   LogOut,
