@@ -10,11 +10,13 @@ interface KanbanBoardProps {
   projectId: number;
 }
 
-const TASK_STATUS = ["todo", "in_progress", "done"] as const;
+const TASK_STATUS = ["backlog", "todo", "todo_today", "in_progress", "end"] as const;
 const STATUS_LABELS = {
+  backlog: "Backlog",
   todo: "To Do",
+  todo_today: "To Do Today",
   in_progress: "In Progress",
-  done: "Done",
+  end: "End"
 };
 
 export default function KanbanBoard({ projectId }: KanbanBoardProps) {
@@ -78,7 +80,7 @@ export default function KanbanBoard({ projectId }: KanbanBoardProps) {
   }, {} as Record<string, Task[]>);
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
       {TASK_STATUS.map((status) => (
         <div
           key={status}

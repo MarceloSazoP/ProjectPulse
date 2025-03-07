@@ -30,7 +30,7 @@ export const tasks = pgTable("tasks", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
   description: text("description"),
-  status: text("status", { enum: ['todo', 'in_progress', 'done'] }).notNull(),
+  status: text("status", { enum: ['backlog', 'todo', 'todo_today', 'in_progress', 'end'] }).notNull(),
   priority: text("priority", { enum: ['low', 'medium', 'high'] }).notNull(),
   dueDate: timestamp("due_date"),
   projectId: integer("project_id").references(() => projects.id),
