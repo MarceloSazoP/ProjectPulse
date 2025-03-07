@@ -3,6 +3,8 @@ import { createServer, type Server } from "http";
 import { setupAuth } from "./auth";
 import { storage } from "./storage";
 import { insertProjectSchema, insertTaskSchema, insertTeamSchema, insertDepartmentSchema, insertProfileSchema, insertUserSchema } from "@shared/schema";
+import path from "path";
+import fs from "fs";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Setup authentication routes
@@ -43,6 +45,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // File upload routes for projects
   app.post("/api/projects/:projectId/files", requireAuth, async (req, res) => {
     const projectId = parseInt(req.params.projectId);
+    const userId = req.user?.id;
     
     // Check if multer is available to handle file uploads
     if (!req.files && !req.file) {
@@ -52,7 +55,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       // Process uploaded files
       const files = Array.isArray(req.files) ? req.files : [req.file];
-      const filenames = files.map(file => file.filename || file.originalname);
+      
+      // Format the date as yyyy-mm-dd
+      const today = new Date();
+      const formattedDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+      
+      // Create new filenames with the format: Proyecto_{idproyecto}_{año-mes-dia}_{id_usuario}.extension
+      const filenames = files.map(file => {
+        const originalExt = path.extname(file.originalname);
+        const newFilename = `Proyecto_${projectId}_${formattedDate}_${userId}${originalExt}`;
+        
+        // Rename the file
+        fs.renameSync(
+          path.join(__dirname, '../uploads', file.filename), 
+          path.join(__dirname, '../uploads', newFilename)
+        );
+        
+        return newFilename;
+      });
       
       // Store file references in project
       await storage.addProjectFiles(projectId, filenames);
@@ -71,6 +91,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(files);
     } catch (error) {
       res.status(500).json({ message: "Error retrieving project files" });
+    }
+  });
+  
+  // Ruta para descargar un archivo específico
+  app.get("/api/projects/:projectId/files/:filename/download", requireAuth, async (req, res) => {
+    const { filename } = req.params;
+    const filePath = path.join(__dirname, '../uploads', filename);
+    
+    try {
+      if (fs.existsSync(filePath)) {
+        res.download(filePath);
+      } else {
+        res.status(404).json({ message: "Archivo no encontrado" });
+      }
+    } catch (error) {
+      res.status(500).json({ message: "Error al descargar el archivo" });
     }
   });
   

@@ -39,7 +39,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { insertProjectSchema } from "@shared/schema";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Plus, Edit, Search, KanbanSquare, GanttChartSquare } from "lucide-react";
+import { Loader2, Plus, Edit, Search, KanbanSquare, GanttChartSquare, Download, FileDown } from "lucide-react";
 import { useState } from "react";
 import ProjectStorage from "./project-storage";
 
@@ -275,6 +275,7 @@ export default function ProjectManagement() {
               <TableHead>Estado</TableHead>
               <TableHead>Fecha Inicio</TableHead>
               <TableHead>Fecha Fin</TableHead>
+              <TableHead>Documentación</TableHead>
               <TableHead>Acciones</TableHead>
             </TableRow>
           </TableHeader>
@@ -296,6 +297,19 @@ export default function ProjectManagement() {
                   </TableCell>
                   <TableCell>
                     {new Date(project.endDate).toLocaleDateString()}
+                  </TableCell>
+                  <TableCell>
+                    {project.files && project.files.length > 0 ? (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => window.open(`/api/projects/${project.id}/files/${project.files[0]}/download`, '_blank')}
+                      >
+                        Descargar
+                      </Button>
+                    ) : (
+                      <span className="text-muted-foreground text-sm">Sin documentos</span>
+                    )}
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center space-x-2">
