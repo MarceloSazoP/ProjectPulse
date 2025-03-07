@@ -103,7 +103,7 @@ export default function NavigationSidebar({
                     variant="ghost"
                     className="w-full justify-start"
                     size="sm"
-                    onClick={() => onViewChange("profiles")} //Simplified
+                    onClick={() => onViewChange("profiles")}
                   >
                     <UserCircle className="mr-2 h-4 w-4" />
                     Perfiles
@@ -175,7 +175,7 @@ export default function NavigationSidebar({
                   variant="ghost"
                   className="w-full justify-start"
                   size="sm"
-                  onClick={() => onViewChange("profiles")} //Simplified
+                  onClick={() => onViewChange("profiles")}
                 >
                   Settings
                 </Button>
