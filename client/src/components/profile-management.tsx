@@ -286,3 +286,374 @@ export default function ProfileManagement() {
     </Card>
   );
 }
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { Profile, Permission, InsertProfile } from "@shared/schema";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { insertProfileSchema } from "@shared/schema";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
+import { Loader2, Plus, Edit2, Trash2 } from "lucide-react";
+import { useState } from "react";
+import {
+  CheckboxGroup,
+  Checkbox,
+} from "@/components/ui/checkbox";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+
+export default function ProfileManagement() {
+  const { toast } = useToast();
+  const [editingProfile, setEditingProfile] = useState<Profile | null>(null);
+  const [profileToDelete, setProfileToDelete] = useState<Profile | null>(null);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+
+  const { data: profiles = [], isLoading } = useQuery({
+    queryKey: ["/api/profiles"],
+    queryFn: async () => {
+      const response = await apiRequest("GET", "/api/profiles");
+      return response.json();
+    }
+  });
+
+  const form = useForm<InsertProfile>({
+    resolver: zodResolver(insertProfileSchema),
+    defaultValues: {
+      name: "",
+      description: "",
+      permissions: [],
+    },
+  });
+
+  const permissions: Permission[] = [
+    "viewProjects",
+    "editProjects", 
+    "deleteProjects",
+    "viewTasks",
+    "editTasks",
+    "deleteTasks",
+    "viewUsers",
+    "editUsers",
+    "viewReports"
+  ];
+
+  const createProfileMutation = useMutation({
+    mutationFn: async (data: InsertProfile) => {
+      const res = await apiRequest("POST", "/api/profiles", data);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/profiles"] });
+      toast({
+        title: "Perfil creado",
+        description: "El perfil ha sido creado exitosamente",
+      });
+      form.reset();
+      setIsDialogOpen(false);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error al crear el perfil",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const updateProfileMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: number; data: Partial<Profile> }) => {
+      const res = await apiRequest("PUT", `/api/profiles/${id}`, data);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/profiles"] });
+      toast({
+        title: "Perfil actualizado",
+        description: "El perfil ha sido actualizado exitosamente",
+      });
+      setEditingProfile(null);
+      setIsDialogOpen(false);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error al actualizar el perfil",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const deleteProfileMutation = useMutation({
+    mutationFn: async (id: number) => {
+      await apiRequest("DELETE", `/api/profiles/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/profiles"] });
+      toast({
+        title: "Perfil eliminado",
+        description: "El perfil ha sido eliminado exitosamente",
+      });
+      setProfileToDelete(null);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error al eliminar el perfil",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const startEdit = (profile: Profile) => {
+    setEditingProfile(profile);
+    form.reset({
+      name: profile.name,
+      description: profile.description,
+      permissions: profile.permissions,
+    });
+    setIsDialogOpen(true);
+  };
+
+  const openCreateDialog = () => {
+    setEditingProfile(null);
+    form.reset({
+      name: "",
+      description: "",
+      permissions: [],
+    });
+    setIsDialogOpen(true);
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <div>
+          <h2 className="text-3xl font-bold tracking-tight">Gestión de Perfiles</h2>
+          <p className="text-muted-foreground">
+            Administra los perfiles de usuarios y sus permisos
+          </p>
+        </div>
+        <Button onClick={openCreateDialog}>
+          <Plus className="mr-2 h-4 w-4" />
+          Añadir Perfil
+        </Button>
+      </div>
+
+      <div className="border rounded-lg">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Nombre</TableHead>
+              <TableHead>Descripción</TableHead>
+              <TableHead>Permisos</TableHead>
+              <TableHead className="w-[100px]">Acciones</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {profiles.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={4} className="text-center h-24">
+                  No hay perfiles disponibles
+                </TableCell>
+              </TableRow>
+            ) : (
+              profiles.map((profile) => (
+                <TableRow key={profile.id}>
+                  <TableCell className="font-medium">{profile.name}</TableCell>
+                  <TableCell>{profile.description}</TableCell>
+                  <TableCell>
+                    <div className="flex flex-wrap gap-1">
+                      {profile.permissions.length === 0 ? (
+                        <span className="text-muted-foreground text-xs">Sin permisos</span>
+                      ) : (
+                        profile.permissions.map((permission) => (
+                          <div key={permission} className="bg-primary/10 text-primary text-xs px-2 py-0.5 rounded">
+                            {permission}
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center space-x-2">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => startEdit(profile)}
+                      >
+                        <Edit2 className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => setProfileToDelete(profile)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </div>
+
+      {/* Dialog para crear/editar perfil */}
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {editingProfile ? "Editar Perfil" : "Crear Nuevo Perfil"}
+            </DialogTitle>
+            <DialogDescription>
+              {editingProfile
+                ? "Actualiza la información y permisos del perfil"
+                : "Añade un nuevo perfil al sistema"}
+            </DialogDescription>
+          </DialogHeader>
+          <Form {...form}>
+            <form
+              onSubmit={form.handleSubmit((data) =>
+                editingProfile
+                  ? updateProfileMutation.mutate({ id: editingProfile.id, data })
+                  : createProfileMutation.mutate(data)
+              )}
+              className="space-y-4"
+            >
+              <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Nombre</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="description"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Descripción</FormLabel>
+                    <FormControl>
+                      <Textarea rows={3} {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="permissions"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Permisos</FormLabel>
+                    <FormControl>
+                      <CheckboxGroup
+                        value={field.value || []}
+                        onValueChange={field.onChange}
+                        className="grid grid-cols-2 gap-2 mt-2"
+                      >
+                        {permissions.map((permission) => (
+                          <Checkbox
+                            key={permission}
+                            value={permission}
+                            label={permission}
+                          />
+                        ))}
+                      </CheckboxGroup>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <Button
+                type="submit"
+                className="w-full"
+                disabled={createProfileMutation.isPending || updateProfileMutation.isPending}
+              >
+                {(createProfileMutation.isPending || updateProfileMutation.isPending) && (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                )}
+                {editingProfile ? "Actualizar Perfil" : "Crear Perfil"}
+              </Button>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog de confirmación para eliminar */}
+      <AlertDialog open={!!profileToDelete} onOpenChange={() => setProfileToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta acción no se puede deshacer. Se eliminará permanentemente este
+              perfil y sus permisos asociados.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => profileToDelete && deleteProfileMutation.mutate(profileToDelete.id)}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleteProfileMutation.isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              ) : null}
+              Eliminar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
+  );
+}
