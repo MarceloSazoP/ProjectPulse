@@ -1,4 +1,3 @@
-
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Project, InsertProject } from "@shared/schema";
 import {
@@ -94,12 +93,12 @@ export default function ProjectManagement() {
         title: "Proyecto creado",
         description: "El proyecto ha sido creado exitosamente",
       });
-      
+
       // Upload files if any
       if (uploadedFiles.length > 0 && newProject.id) {
         uploadProjectFiles(newProject.id);
       }
-      
+
       form.reset();
       setUploadedFiles([]);
       setIsDialogOpen(false);
@@ -124,12 +123,12 @@ export default function ProjectManagement() {
         title: "Proyecto actualizado",
         description: "El proyecto ha sido actualizado exitosamente",
       });
-      
+
       // Upload files if any
       if (uploadedFiles.length > 0 && updatedProject.id) {
         uploadProjectFiles(updatedProject.id);
       }
-      
+
       setEditingProject(null);
       setUploadedFiles([]);
       setIsDialogOpen(false);
@@ -145,23 +144,23 @@ export default function ProjectManagement() {
 
   const uploadProjectFiles = async (projectId: number) => {
     if (uploadedFiles.length === 0) return;
-    
+
     const formData = new FormData();
     uploadedFiles.forEach(file => {
       formData.append('files', file);
     });
-    
+
     try {
       const response = await fetch(`/api/projects/${projectId}/files`, {
         method: 'POST',
         body: formData,
         credentials: 'include',
       });
-      
+
       if (!response.ok) {
         throw new Error('Error uploading files');
       }
-      
+
       toast({
         title: "Archivos subidos",
         description: "Los archivos han sido subidos exitosamente",
@@ -227,7 +226,7 @@ export default function ProjectManagement() {
     };
 
     const config = statusConfig[status] || { label: status, color: 'bg-gray-100 text-gray-800' };
-    
+
     return (
       <Badge variant="outline" className={`${config.color}`}>
         {config.label}
@@ -458,7 +457,11 @@ export default function ProjectManagement() {
                     <FormItem>
                       <FormLabel>Presupuesto</FormLabel>
                       <FormControl>
-                        <Input type="number" {...field} />
+                        <Input 
+                          type="number" 
+                          {...field} 
+                          onChange={(e) => field.onChange(Number(e.target.value))}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -493,7 +496,7 @@ export default function ProjectManagement() {
                   </FormItem>
                 )}
               />
-              
+
               {/* Componente para subir archivos */}
               <div className="pt-4 border-t">
                 <h3 className="text-sm font-medium mb-2">Archivos del proyecto</h3>
@@ -523,7 +526,7 @@ export default function ProjectManagement() {
                   </div>
                 )}
               </div>
-              
+
               <Button
                 type="submit"
                 className="w-full"
