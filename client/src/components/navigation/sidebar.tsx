@@ -169,7 +169,6 @@ export default function Sidebar({ projects, onViewChange }: NavigationSidebarPro
   );
 }
 import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useProjectStore } from "@/store/projects";
 import { Project } from "@shared/schema";
