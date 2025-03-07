@@ -40,6 +40,7 @@ export const projects = pgTable("projects", {
   status: text("status", { enum: ['planning', 'active', 'completed', 'on_hold'] }).notNull(),
   budget: integer("budget"),
   managerId: integer("manager_id").references(() => users.id),
+  files: text("files").array(),
 });
 
 // Tasks table

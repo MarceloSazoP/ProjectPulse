@@ -40,6 +40,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.sendStatus(204);
   });
 
+  // File upload routes for projects
+  app.post("/api/projects/:projectId/files", requireAuth, async (req, res) => {
+    const projectId = parseInt(req.params.projectId);
+    
+    // Check if multer is available to handle file uploads
+    if (!req.files && !req.file) {
+      return res.status(400).json({ message: "No files were uploaded" });
+    }
+    
+    try {
+      // Process uploaded files
+      const files = Array.isArray(req.files) ? req.files : [req.file];
+      const filenames = files.map(file => file.filename || file.originalname);
+      
+      // Store file references in project
+      await storage.addProjectFiles(projectId, filenames);
+      
+      res.status(201).json({ filenames });
+    } catch (error) {
+      console.error("Error uploading files:", error);
+      res.status(500).json({ message: "Error processing file upload" });
+    }
+  });
+  
+  app.get("/api/projects/:projectId/files", requireAuth, async (req, res) => {
+    const projectId = parseInt(req.params.projectId);
+    try {
+      const files = await storage.getProjectFiles(projectId);
+      res.json(files);
+    } catch (error) {
+      res.status(500).json({ message: "Error retrieving project files" });
+    }
+  });
+  
+  app.delete("/api/projects/:projectId/files/:filename", requireAuth, async (req, res) => {
+    const projectId = parseInt(req.params.projectId);
+    const { filename } = req.params;
+    
+    try {
+      await storage.removeProjectFile(projectId, filename);
+      res.sendStatus(204);
+    } catch (error) {
+      res.status(500).json({ message: "Error deleting file" });
+    }
+  });
+
   // Task routes
   app.get("/api/projects/:projectId/tasks", requireAuth, async (req, res) => {
     const projectId = parseInt(req.params.projectId);

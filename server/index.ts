@@ -1,5 +1,7 @@
 import 'dotenv/config';
 import express, { type Request, Response, NextFunction } from "express";
+import multer from "multer";
+import path from "path";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { seedAdminUser } from "./seed";
@@ -7,6 +9,21 @@ import { seedAdminUser } from "./seed";
 const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
+
+// Configure multer for file uploads
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, path.join(__dirname, '../uploads'));
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
+  }
+});
+
+const upload = multer({ storage });
+app.use('/api/projects/:projectId/files', upload.array('files'));
+
 
 app.use((req, res, next) => {
   const start = Date.now();
@@ -41,7 +58,7 @@ app.use((req, res, next) => {
 (async () => {
   // Seed admin user
   await seedAdminUser();
-  
+
   const server = await registerRoutes(app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {

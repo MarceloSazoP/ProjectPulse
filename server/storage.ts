@@ -7,7 +7,7 @@ const MemoryStore = createMemoryStore(session);
 export interface IStorage {
   // Session store
   sessionStore: session.Store;
-  
+
   // User operations
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
@@ -15,35 +15,38 @@ export interface IStorage {
   createUser(user: InsertUser): Promise<User>;
   updateUser(id: number, user: Partial<User>): Promise<User>;
   deleteUser(id: number): Promise<void>;
-  
+
   // Project operations
   getProjects(): Promise<Project[]>;
   getProject(id: number): Promise<Project | undefined>;
   createProject(project: InsertProject): Promise<Project>;
   updateProject(id: number, project: Partial<Project>): Promise<Project>;
   deleteProject(id: number): Promise<void>;
-  
+  addProjectFiles(projectId: number, filenames: string[]): Promise<void>;
+  getProjectFiles(projectId: number): Promise<string[]>;
+  removeProjectFile(projectId: number, filename: string): Promise<void>;
+
   // Task operations
   getTasks(projectId: number): Promise<Task[]>;
   getTask(id: number): Promise<Task | undefined>;
   createTask(task: InsertTask): Promise<Task>;
   updateTask(id: number, task: Partial<Task>): Promise<Task>;
   deleteTask(id: number): Promise<void>;
-  
+
   // Team operations
   getTeams(): Promise<Team[]>;
   getTeam(id: number): Promise<Team | undefined>;
   createTeam(team: InsertTeam): Promise<Team>;
   updateTeam(id: number, team: Partial<Team>): Promise<Team>;
   deleteTeam(id: number): Promise<void>;
-  
+
   // Department operations
   getDepartments(): Promise<Department[]>;
   getDepartment(id: number): Promise<Department | undefined>;
   createDepartment(department: InsertDepartment): Promise<Department>;
   updateDepartment(id: number, department: Partial<Department>): Promise<Department>;
   deleteDepartment(id: number): Promise<void>;
-  
+
   // Profile operations
   getProfiles(): Promise<Profile[]>;
   getProfile(id: number): Promise<Profile | undefined>;
@@ -85,7 +88,7 @@ export class MemStorage implements IStorage {
       (user) => user.username === username,
     );
   }
-  
+
   async getUsers(): Promise<User[]> {
     return Array.from(this.users.values());
   }
@@ -102,7 +105,7 @@ export class MemStorage implements IStorage {
     this.users.set(id, user);
     return user;
   }
-  
+
   async updateUser(id: number, userData: Partial<User>): Promise<User> {
     const existing = await this.getUser(id);
     if (!existing) throw new Error("User not found");
@@ -110,7 +113,7 @@ export class MemStorage implements IStorage {
     this.users.set(id, updated);
     return updated;
   }
-  
+
   async deleteUser(id: number): Promise<void> {
     this.users.delete(id);
   }
@@ -131,7 +134,8 @@ export class MemStorage implements IStorage {
       id,
       description: project.description || null,
       budget: project.budget || null,
-      managerId: project.managerId || null
+      managerId: project.managerId || null,
+      files: [] // Initialize files array
     };
     this.projects.set(id, newProject);
     return newProject;
@@ -148,6 +152,26 @@ export class MemStorage implements IStorage {
   async deleteProject(id: number): Promise<void> {
     this.projects.delete(id);
   }
+
+  async addProjectFiles(projectId: number, filenames: string[]): Promise<void> {
+    const project = await this.getProject(projectId);
+    if (!project) throw new Error("Project not found");
+    project.files = [...(project.files || []), ...filenames];
+    this.projects.set(projectId, project);
+  }
+
+  async getProjectFiles(projectId: number): Promise<string[]> {
+    const project = await this.getProject(projectId);
+    return project?.files || [];
+  }
+
+  async removeProjectFile(projectId: number, filename: string): Promise<void> {
+    const project = await this.getProject(projectId);
+    if (!project) throw new Error("Project not found");
+    project.files = (project.files || []).filter(file => file !== filename);
+    this.projects.set(projectId, project);
+  }
+
 
   // Task operations
   async getTasks(projectId: number): Promise<Task[]> {
@@ -217,7 +241,7 @@ export class MemStorage implements IStorage {
   async deleteTeam(id: number): Promise<void> {
     this.teams.delete(id);
   }
-  
+
   // Department operations
   async getDepartments(): Promise<Department[]> {
     return Array.from(this.departments.values());
@@ -249,7 +273,7 @@ export class MemStorage implements IStorage {
   async deleteDepartment(id: number): Promise<void> {
     this.departments.delete(id);
   }
-  
+
   // Profile operations
   async getProfiles(): Promise<Profile[]> {
     return Array.from(this.profiles.values());
