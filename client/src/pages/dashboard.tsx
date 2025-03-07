@@ -13,6 +13,7 @@ import { useProjectStore } from "@/store/projects";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2 } from "lucide-react";
 import { useState } from "react";
+import { BreadcrumbNav } from "@/components/navigation/breadcrumb";
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -32,34 +33,30 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="flex h-screen">
-      <Sidebar projects={projects || []} onViewChange={setView} />
-
-      <main className="flex-1 overflow-y-auto bg-background p-6">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-bold">
-            {selectedProject ? selectedProject.name : 'Project Management'}
-          </h1>
-          <div className="text-sm text-muted-foreground">
-            Welcome, {user?.username}
-          </div>
-        </div>
-
-        {!selectedProject && user?.role === 'admin' && view === 'dashboard' && (
-          <AdminDashboard />
-        )}
-        {!selectedProject && user?.role === 'admin' && view === 'users' && (
-          <UserManagement />
-        )}
-        {!selectedProject && user?.role === 'admin' && view === 'departments' && (
-          <DepartmentManagement />
-        )}
-        {!selectedProject && user?.role === 'admin' && view === 'profiles' && (
-          <ProfileManagement />
-        )}
+    <div className="min-h-screen flex">
+      <Sidebar projects={projects || []} onViewChange={(v) => setView(v)} />
+      <main className="flex-1 p-6">
+        <BreadcrumbNav />
+        <h1 className="text-2xl font-bold mb-6">Welcome, {user?.username}!</h1>
 
         {view === 'projects' && (
           <ProjectManagement />
+        )}
+
+        {view === 'users' && user?.role === 'admin' && (
+          <UserManagement />
+        )}
+
+        {view === 'departments' && user?.role === 'admin' && (
+          <DepartmentManagement />
+        )}
+
+        {view === 'profiles' && (
+          <ProfileManagement />
+        )}
+
+        {view === 'dashboard' && user?.role === 'admin' && (
+          <AdminDashboard />
         )}
 
         {selectedProject && view === 'kanban' && (
@@ -96,28 +93,6 @@ export default function Dashboard() {
           </div>
         )}
       </main>
-    </div>
-  );
-}
-import { useAuth } from "@/hooks/use-auth";
-import NavigationSidebar from "@/components/navigation/sidebar";
-import { useProjectStore } from "@/store/projects";
-import { BreadcrumbNav } from "@/components/navigation/breadcrumb";
-import { useLocation } from "wouter";
-
-export default function Dashboard() {
-  const { user } = useAuth();
-  const { projects } = useProjectStore();
-  const [location] = useLocation();
-
-  return (
-    <div className="min-h-screen flex">
-      <NavigationSidebar projects={projects} onViewChange={() => {}} />
-      <div className="flex-1 p-6">
-        <BreadcrumbNav />
-        <h1 className="text-2xl font-bold">Welcome, {user?.username}!</h1>
-        {/* Your dashboard content */}
-      </div>
     </div>
   );
 }
