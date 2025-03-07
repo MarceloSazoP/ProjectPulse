@@ -194,7 +194,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-export default function Sidebar({ projects, onViewChange }: NavigationSidebarProps) {
+export default function NavigationSidebar({ projects, onViewChange }: NavigationSidebarProps) {
   const { selectedProject, setSelectedProject } = useProjectStore();
   const { user, logout } = useAuth();
   const navigate = useRouter();
