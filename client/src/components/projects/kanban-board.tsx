@@ -389,5 +389,4 @@ export default function KanbanBoard({ projectId }: KanbanBoardProps) {
 }
 
 
-// Import the BreadcrumbNav component from the navigation directory
-import { BreadcrumbNav } from "@/components/navigation/breadcrumb";
+// The BreadcrumbNav component is already imported elsewhere
