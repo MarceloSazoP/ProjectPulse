@@ -1,4 +1,3 @@
-
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { User, InsertUser, userRoles } from "@shared/schema";
 import {
@@ -52,6 +51,8 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, UserPlus, Edit2, Trash2 } from "lucide-react";
 import { useState } from "react";
+import { BreadcrumbNav } from "@/components/navigation/breadcrumb"; // Added import
+
 
 export default function UserManagement() {
   const { toast } = useToast();
@@ -195,6 +196,7 @@ export default function UserManagement() {
 
   return (
     <div className="space-y-6">
+      <BreadcrumbNav items={[{ label: "Users Management" }]} /> {/* Added Breadcrumb */}
       <div className="flex justify-between items-center">
         <div>
           <h2 className="text-3xl font-bold tracking-tight">Gestión de Usuarios</h2>
@@ -244,13 +246,13 @@ export default function UserManagement() {
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    {user.departmentId ? 
-                      departments.find(d => d.id === user.departmentId)?.name || 'N/A' 
+                    {user.departmentId ?
+                      departments.find(d => d.id === user.departmentId)?.name || 'N/A'
                       : 'N/A'}
                   </TableCell>
                   <TableCell>
-                    {user.profileId ? 
-                      profiles.find(p => p.id === user.profileId)?.name || 'N/A' 
+                    {user.profileId ?
+                      profiles.find(p => p.id === user.profileId)?.name || 'N/A'
                       : 'N/A'}
                   </TableCell>
                   <TableCell>

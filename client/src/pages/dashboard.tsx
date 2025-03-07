@@ -99,3 +99,25 @@ export default function Dashboard() {
     </div>
   );
 }
+import { useAuth } from "@/hooks/use-auth";
+import NavigationSidebar from "@/components/navigation/sidebar";
+import { useProjectStore } from "@/store/projects";
+import { BreadcrumbNav } from "@/components/navigation/breadcrumb";
+import { useLocation } from "wouter";
+
+export default function Dashboard() {
+  const { user } = useAuth();
+  const { projects } = useProjectStore();
+  const [location] = useLocation();
+
+  return (
+    <div className="min-h-screen flex">
+      <NavigationSidebar projects={projects} onViewChange={() => {}} />
+      <div className="flex-1 p-6">
+        <BreadcrumbNav />
+        <h1 className="text-2xl font-bold">Welcome, {user?.username}!</h1>
+        {/* Your dashboard content */}
+      </div>
+    </div>
+  );
+}

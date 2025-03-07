@@ -42,6 +42,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Loader2, Plus, Edit, Search, KanbanSquare, GanttChartSquare, Download, FileDown } from "lucide-react";
 import { useState } from "react";
 import ProjectStorage from "./project-storage";
+import { BreadcrumbNav } from "@/components/navigation/breadcrumb"; // Added import
 
 export default function ProjectManagement() {
   const { toast } = useToast();
@@ -255,6 +256,7 @@ export default function ProjectManagement() {
 
   return (
     <div className="space-y-6">
+      <BreadcrumbNav items={[{ label: "Projects", href: "/projects" }]} /> {/* Added BreadcrumbNav */}
       <div className="flex justify-between items-center">
         <div>
           <h2 className="text-3xl font-bold tracking-tight">Gestión de Proyectos</h2>

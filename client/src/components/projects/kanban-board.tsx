@@ -34,6 +34,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { format } from "date-fns";
 import { useState } from "react";
+import { BreadcrumbNav } from "@/components/navigation/breadcrumb"; // Added import
 
 interface KanbanBoardProps {
   projectId: number;
@@ -64,7 +65,7 @@ const PRIORITY_COLORS = {
 
 export default function KanbanBoard({ projectId }: KanbanBoardProps) {
   const { toast } = useToast();
-  const { setIsDraggingTask, setDraggedTask } = useProjectStore();
+  const { setIsDraggingTask, setDraggedTask, selectedProject } = useProjectStore(); // Added selectedProject
   const [editingTask, setEditingTask] = useState<Task | null>(null);
 
   const { data: tasks = [], isLoading } = useQuery<Task[]>({
@@ -172,6 +173,11 @@ export default function KanbanBoard({ projectId }: KanbanBoardProps) {
 
   return (
     <div className="space-y-4">
+      <BreadcrumbNav items={[
+        { label: "Projects", href: "/projects" },
+        { label: selectedProject?.name || "Project", href: `/projects/${selectedProject?.id}` },
+        { label: "Kanban Board" }
+      ]} /> {/* Added BreadcrumbNav */}
       <div className="flex justify-between items-center">
         <h3 className="text-lg font-medium">Tasks</h3>
         <Dialog>
@@ -381,3 +387,24 @@ export default function KanbanBoard({ projectId }: KanbanBoardProps) {
     </div>
   );
 }
+
+
+// Added BreadcrumbNav component -  This is a placeholder, adapt to your actual styling and routing
+const BreadcrumbNav = ({ items }: { items: { label: string; href?: string }[] }) => {
+  return (
+    <nav className="flex gap-2">
+      {items.map((item, index) => (
+        <span key={index} className="text-sm">
+          {item.href ? (
+            <a href={item.href} className="text-blue-500 hover:underline">
+              {item.label}
+            </a>
+          ) : (
+            item.label
+          )}
+          {index < items.length - 1 && <span className="text-gray-400">/</span>}
+        </span>
+      ))}
+    </nav>
+  );
+};
