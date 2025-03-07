@@ -1,0 +1,54 @@
+Crea un SaaS de gestión de proyectos utilizando Next.js (App Router) para el frontend y Node.js con Express y PostgreSQL para el backend.
+
+1. Autenticación y Roles
+Login/Register con JWT.
+Perfiles: Administrador, Gerente de Proyecto, Miembro del Equipo y Cliente.
+Cada perfil debe tener acceso a diferentes módulos en el Dashboard.
+2. Menú Principal (Todos los Módulos Disponibles)
+El sistema debe contar con un menú de navegación en el dashboard, donde se listarán todos los módulos según los permisos del usuario.
+
+Ejemplo de estructura del menú:
+
+Inicio (Resumen con métricas principales).
+Usuarios (Solo Administradores).
+Equipos.
+Proyectos.
+Tareas.
+Kanban Board.
+Gantt Chart.
+Presupuesto.
+Reportes.
+Configuración (Perfil, notificaciones, seguridad).
+Cada módulo del menú debe llevar al usuario a su respectiva vista con las funcionalidades correspondientes.
+
+3. Simulación de Base de Datos en JSON
+Genera datos ficticios en JSON con:
+
+Usuarios (con perfiles y credenciales).
+Proyectos (nombre, descripción, fechas, presupuesto, estado).
+Tareas (nombre, asignado a, estado, fecha límite).
+4. API en Node.js con Express
+Simulación de conexión a PostgreSQL (gestion_proyectos_main, usuario postgres, password admin).
+
+Endpoints Generales
+/auth/login (POST) → Autenticación con JWT.
+/users (GET, POST, PUT, DELETE) → Gestión de usuarios.
+/projects (GET, POST, PUT, DELETE) → Gestión de proyectos.
+/tasks (GET, POST, PUT, DELETE) → Gestión de tareas.
+/teams (GET, POST, PUT, DELETE) → Gestión de equipos.
+5. Endpoints para Kanban
+El Kanban organiza las tareas de un proyecto por estado (To Do, In Progress, Done).
+
+/kanban/:projectId (GET) → Obtiene todas las tareas de un proyecto organizadas por estado.
+/kanban/task/:taskId/move (PUT) → Cambia el estado de una tarea (To Do → In Progress → Done).
+/kanban/task/:taskId/assign (PUT) → Asigna una tarea a un usuario del equipo.
+6. Endpoints para Carta Gantt
+El diagrama de Gantt gestiona tareas con fechas de inicio y fin.
+
+/gantt/:projectId (GET) → Obtiene todas las tareas del proyecto con fechas de inicio y fin.
+/gantt/task/:taskId/update (PUT) → Modifica fechas de inicio o fin de una tarea.
+7. Tecnologías
+Frontend: Next.js (App Router), TailwindCSS, Zustand o Context API.
+Backend: Node.js, Express, PostgreSQL.
+Autenticación: JWT.
+Estado: Zustand o Redux.
