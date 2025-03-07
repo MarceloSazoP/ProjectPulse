@@ -6,8 +6,9 @@ import KanbanBoard from "@/components/projects/kanban-board";
 import GanttChart from "@/components/projects/gantt-chart";
 import ProjectManagement from "@/components/projects/project-management";
 import UserManagement from "@/components/users/user-management";
-import DepartmentManagement from "@/components/department-management"; // Added
-import ProfileManagement from "@/components/profile-management"; // Added
+import DepartmentManagement from "@/components/department-management";
+import ProfileManagement from "@/components/profile-management";
+import AdminDashboard from "@/components/admin-dashboard";
 import { useProjectStore } from "@/store/projects";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2 } from "lucide-react";
@@ -16,7 +17,7 @@ import { useState } from "react";
 export default function Dashboard() {
   const { user } = useAuth();
   const selectedProject = useProjectStore((state) => state.selectedProject);
-  const [view, setView] = useState<'kanban' | 'gantt' | 'projects' | 'users' | 'departments' | 'profiles' | null>(null); // Added 'departments' and 'profiles'
+  const [view, setView] = useState<'kanban' | 'gantt' | 'projects' | 'users' | 'departments' | 'profiles' | 'dashboard' | null>(null);
 
   const { data: projects, isLoading } = useQuery<Project[]>({
     queryKey: ["/api/projects"],
@@ -44,16 +45,18 @@ export default function Dashboard() {
           </div>
         </div>
 
+        {!selectedProject && user?.role === 'admin' && view === 'dashboard' && (
+          <AdminDashboard />
+        )}
         {!selectedProject && user?.role === 'admin' && view === 'users' && (
           <UserManagement />
         )}
-          {!selectedProject && user?.role === 'admin' && view === 'departments' && (
+        {!selectedProject && user?.role === 'admin' && view === 'departments' && (
           <DepartmentManagement />
         )}
-          {!selectedProject && user?.role === 'admin' && view === 'profiles' && (
+        {!selectedProject && user?.role === 'admin' && view === 'profiles' && (
           <ProfileManagement />
         )}
-
 
         {view === 'projects' && (
           <ProjectManagement />

@@ -84,6 +84,18 @@ export default function NavigationSidebar({
                     size="sm"
                     onClick={() => {
                       setSelectedProject(null);
+                      onViewChange("dashboard");
+                    }}
+                  >
+                    <LayoutDashboard className="mr-2 h-4 w-4" />
+                    Dashboard
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    className="w-full justify-start"
+                    size="sm"
+                    onClick={() => {
+                      setSelectedProject(null);
                       onViewChange("users");
                     }}
                   >
@@ -94,7 +106,7 @@ export default function NavigationSidebar({
                     variant="ghost"
                     className="w-full justify-start"
                     size="sm"
-                    onClick={() => onViewChange("departments")} //Simplified
+                    onClick={() => onViewChange("departments")}
                   >
                     <Building2 className="mr-2 h-4 w-4" />
                     Departamentos
