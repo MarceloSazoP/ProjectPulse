@@ -472,8 +472,8 @@ export default function ProjectManagement() {
                   <FormItem>
                     <FormLabel>Responsable</FormLabel>
                     <Select
-                      onValueChange={(value) => field.onChange(value ? parseInt(value) : null)}
-                      defaultValue={field.value?.toString() || ""}
+                      onValueChange={(value) => field.onChange(value && value !== "null" ? parseInt(value) : null)}
+                      defaultValue={field.value?.toString() || "null"}
                     >
                       <FormControl>
                         <SelectTrigger>
@@ -481,7 +481,7 @@ export default function ProjectManagement() {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="">Ninguno</SelectItem>
+                        <SelectItem value="null">Ninguno</SelectItem>
                         {users.map((user) => (
                           <SelectItem key={user.id} value={user.id.toString()}>
                             {user.username}
