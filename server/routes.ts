@@ -56,6 +56,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Process uploaded files
       const files = Array.isArray(req.files) ? req.files : [req.file];
       
+      // Validate file types - only allow .zip and .rar
+      for (const file of files) {
+        const fileExt = path.extname(file.originalname).toLowerCase();
+        if (fileExt !== '.zip' && fileExt !== '.rar') {
+          // Delete the uploaded file if it's not a valid type
+          try {
+            fs.unlinkSync(path.join(__dirname, '../uploads', file.filename));
+          } catch (err) {
+            console.error("Error deleting invalid file:", err);
+          }
+          return res.status(400).json({ 
+            message: "Solo se permiten archivos comprimidos (.zip o .rar)" 
+          });
+        }
+      }
+      
       // Format the date as yyyy-mm-dd
       const today = new Date();
       const formattedDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
@@ -65,10 +81,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const originalExt = path.extname(file.originalname);
         const newFilename = `Proyecto_${projectId}_${formattedDate}_${userId}${originalExt}`;
         
+        // Get the correct paths using __dirname
+        const uploadDir = path.join(__dirname, '../uploads');
+        
         // Rename the file
         fs.renameSync(
-          path.join(__dirname, '../uploads', file.filename), 
-          path.join(__dirname, '../uploads', newFilename)
+          path.join(uploadDir, file.filename), 
+          path.join(uploadDir, newFilename)
         );
         
         return newFilename;

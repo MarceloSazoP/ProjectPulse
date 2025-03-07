@@ -25,11 +25,31 @@ export default function ProjectStorage({
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
-      const newFiles = Array.from(e.target.files);
-      setFiles(prev => [...prev, ...newFiles]);
-      if (onFilesChange) {
-        onFilesChange([...files, ...newFiles]);
+      const fileList = Array.from(e.target.files);
+      
+      // Filter for only .zip and .rar files
+      const validFiles = fileList.filter(file => {
+        const extension = file.name.toLowerCase().split('.').pop();
+        return extension === 'zip' || extension === 'rar';
+      });
+      
+      if (validFiles.length !== fileList.length) {
+        toast({
+          title: "Archivos no válidos",
+          description: "Solo se permiten archivos comprimidos (.zip o .rar)",
+          variant: "destructive",
+        });
       }
+      
+      if (validFiles.length > 0) {
+        setFiles(prev => [...prev, ...validFiles]);
+        if (onFilesChange) {
+          onFilesChange([...files, ...validFiles]);
+        }
+      }
+      
+      // Reset the input to allow selecting the same file again
+      e.target.value = '';
     }
   };
 

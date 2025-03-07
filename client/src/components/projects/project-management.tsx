@@ -514,6 +514,9 @@ export default function ProjectManagement() {
               {/* Componente para subir archivos */}
               <div className="pt-4 border-t">
                 <h3 className="text-sm font-medium mb-2">Archivos del proyecto</h3>
+                <p className="text-xs text-muted-foreground mb-2">
+                  Solo se aceptan archivos comprimidos (.zip o .rar)
+                </p>
                 {editingProject ? (
                   <ProjectStorage 
                     projectId={editingProject.id} 
@@ -525,10 +528,26 @@ export default function ProjectManagement() {
                     <Input
                       type="file"
                       multiple
+                      accept=".zip,.rar"
                       onChange={(e) => {
                         if (e.target.files && e.target.files.length > 0) {
-                          const files = Array.from(e.target.files);
-                          setUploadedFiles(files);
+                          const files = Array.from(e.target.files).filter(file => {
+                            const extension = file.name.toLowerCase().split('.').pop();
+                            return extension === 'zip' || extension === 'rar';
+                          });
+                          
+                          if (files.length > 0) {
+                            setUploadedFiles(files);
+                          } else {
+                            toast({
+                              title: "Archivos no válidos",
+                              description: "Solo se permiten archivos comprimidos (.zip o .rar)",
+                              variant: "destructive",
+                            });
+                          }
+                          
+                          // Reset input
+                          e.target.value = '';
                         }
                       }}
                     />
