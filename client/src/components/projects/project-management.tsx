@@ -60,12 +60,7 @@ export default function ProjectManagement() {
 
   const createProjectMutation = useMutation({
     mutationFn: async (data: InsertProject) => {
-      const formattedData = {
-        ...data,
-        startDate: new Date(data.startDate).toISOString(),
-        endDate: new Date(data.endDate).toISOString(),
-      };
-      const res = await apiRequest("POST", "/api/projects", formattedData);
+      const res = await apiRequest("POST", "/api/projects", data);
       return res.json();
     },
     onSuccess: () => {
@@ -87,12 +82,7 @@ export default function ProjectManagement() {
 
   const updateProjectMutation = useMutation({
     mutationFn: async ({ id, data }: { id: number; data: Partial<Project> }) => {
-      const formattedData = {
-        ...data,
-        startDate: data.startDate ? new Date(data.startDate).toISOString() : undefined,
-        endDate: data.endDate ? new Date(data.endDate).toISOString() : undefined,
-      };
-      const res = await apiRequest("PUT", `/api/projects/${id}`, formattedData);
+      const res = await apiRequest("PUT", `/api/projects/${id}`, data);
       return res.json();
     },
     onSuccess: () => {
@@ -191,10 +181,10 @@ export default function ProjectManagement() {
                     <FormItem>
                       <FormLabel>Start Date</FormLabel>
                       <FormControl>
-                        <Input 
-                          type="date" 
+                        <Input
+                          type="date"
                           {...field}
-                          value={value instanceof Date ? value.toISOString().split('T')[0] : ''} 
+                          value={value instanceof Date ? value.toISOString().split('T')[0] : ''}
                           onChange={(e) => onChange(new Date(e.target.value))}
                         />
                       </FormControl>
@@ -209,10 +199,10 @@ export default function ProjectManagement() {
                     <FormItem>
                       <FormLabel>End Date</FormLabel>
                       <FormControl>
-                        <Input 
-                          type="date" 
+                        <Input
+                          type="date"
                           {...field}
-                          value={value instanceof Date ? value.toISOString().split('T')[0] : ''} 
+                          value={value instanceof Date ? value.toISOString().split('T')[0] : ''}
                           onChange={(e) => onChange(new Date(e.target.value))}
                         />
                       </FormControl>

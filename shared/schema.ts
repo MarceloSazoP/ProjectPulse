@@ -50,9 +50,13 @@ export const teamMembers = pgTable("team_members", {
   userId: integer("user_id").references(() => users.id),
 });
 
-// Insert schemas
+// Custom insert schemas with proper date handling
+export const insertProjectSchema = createInsertSchema(projects, {
+  startDate: z.string().transform((str) => new Date(str)),
+  endDate: z.string().transform((str) => new Date(str)),
+});
+
 export const insertUserSchema = createInsertSchema(users);
-export const insertProjectSchema = createInsertSchema(projects);
 export const insertTaskSchema = createInsertSchema(tasks);
 export const insertTeamSchema = createInsertSchema(teams);
 
