@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Project } from "@shared/schema";
 import KanbanBoard from "@/components/projects/kanban-board";
 import GanttChart from "@/components/projects/gantt-chart";
+import ProjectManagement from "@/components/projects/project-management";
 import UserManagement from "@/components/users/user-management";
 import { useProjectStore } from "@/store/projects";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,7 +14,7 @@ import { useState } from "react";
 export default function Dashboard() {
   const { user } = useAuth();
   const selectedProject = useProjectStore((state) => state.selectedProject);
-  const [view, setView] = useState<'kanban' | 'gantt' | null>(null);
+  const [view, setView] = useState<'kanban' | 'gantt' | 'projects' | null>(null);
 
   const { data: projects, isLoading } = useQuery<Project[]>({
     queryKey: ["/api/projects"],
@@ -43,6 +44,10 @@ export default function Dashboard() {
 
         {!selectedProject && user?.role === 'admin' && !view && (
           <UserManagement />
+        )}
+
+        {view === 'projects' && (
+          <ProjectManagement />
         )}
 
         {selectedProject && view === 'kanban' && (

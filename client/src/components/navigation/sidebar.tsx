@@ -23,7 +23,7 @@ import {
 
 interface SidebarProps {
   projects: Project[];
-  onViewChange: (view: 'kanban' | 'gantt' | null) => void;
+  onViewChange: (view: 'kanban' | 'gantt' | 'projects' | null) => void;
 }
 
 export default function Sidebar({ projects, onViewChange }: SidebarProps) {
@@ -67,6 +67,10 @@ export default function Sidebar({ projects, onViewChange }: SidebarProps) {
                 variant="ghost"
                 className="w-full justify-start"
                 size="sm"
+                onClick={() => {
+                  setSelectedProject(null);
+                  onViewChange('projects');
+                }}
               >
                 <FolderKanban className="mr-2 h-4 w-4" />
                 Projects
