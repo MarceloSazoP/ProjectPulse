@@ -390,8 +390,8 @@ export default function UserManagement() {
                   <FormItem>
                     <FormLabel>Perfil</FormLabel>
                     <Select
-                      onValueChange={(value) => field.onChange(value ? parseInt(value) : null)}
-                      defaultValue={field.value?.toString() || ""}
+                      onValueChange={(value) => field.onChange(value !== "0" ? parseInt(value) : null)}
+                      defaultValue={field.value?.toString() || "0"}
                     >
                       <FormControl>
                         <SelectTrigger>
@@ -399,7 +399,7 @@ export default function UserManagement() {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="">Ninguno</SelectItem>
+                        <SelectItem value="0">Ninguno</SelectItem>
                         {profiles.map((profile) => (
                           <SelectItem key={profile.id} value={profile.id.toString()}>
                             {profile.name}
