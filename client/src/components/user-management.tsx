@@ -75,7 +75,7 @@ export default function UserManagement() {
 
   const createMutation = useMutation({
     mutationFn: async (data: z.infer<typeof userSchema>) => {
-      const response = await axios.post("/api/register", data);
+      const response = await axios.post("/api/users", data);
       return response.data;
     },
     onSuccess: () => {
@@ -95,13 +95,7 @@ export default function UserManagement() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: async ({
-      id,
-      data,
-    }: {
-      id: number;
-      data: z.infer<typeof editUserSchema>;
-    }) => {
+    mutationFn: async ({ id, data }: { id: number; data: z.infer<typeof editUserSchema> }) => {
       const response = await axios.put(`/api/users/${id}`, data);
       return response.data;
     },
@@ -147,18 +141,11 @@ export default function UserManagement() {
   });
 
   const onSubmit = (data: z.infer<typeof userSchema>) => {
-    // Convert string IDs to numbers if they exist
-    const formattedData = {
-      ...data,
-      departmentId: data.departmentId ? Number(data.departmentId) : null,
-      profileId: data.profileId ? Number(data.profileId) : null,
-    };
-
     if (editingId) {
-      const { password, ...updateData } = formattedData;
+      const { password, ...updateData } = data;
       updateMutation.mutate({ id: editingId, data: updateData });
     } else {
-      createMutation.mutate(formattedData);
+      createMutation.mutate(data);
     }
   };
 
@@ -203,14 +190,12 @@ export default function UserManagement() {
   };
 
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>
-            {editingId ? "Editar Usuario" : "Crear Usuario"}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
+    <Card className="w-full">
+      <CardHeader>
+        <CardTitle>Gestión de Usuarios</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-4">
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
               <FormField
@@ -220,7 +205,7 @@ export default function UserManagement() {
                   <FormItem>
                     <FormLabel>Nombre de usuario</FormLabel>
                     <FormControl>
-                      <Input {...field} />
+                      <Input placeholder="Ingrese nombre de usuario" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -234,7 +219,11 @@ export default function UserManagement() {
                     <FormItem>
                       <FormLabel>Contraseña</FormLabel>
                       <FormControl>
-                        <Input type="password" {...field} />
+                        <Input
+                          type="password"
+                          placeholder="Ingrese contraseña"
+                          {...field}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -328,84 +317,81 @@ export default function UserManagement() {
                   </FormItem>
                 )}
               />
-              <div className="flex space-x-2">
-                <Button
-                  type="submit"
-                  disabled={
-                    createMutation.isPending || updateMutation.isPending
-                  }
-                >
-                  {(createMutation.isPending || updateMutation.isPending) && (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              <div className="flex gap-2">
+                <Button type="submit" disabled={createMutation.isPending || updateMutation.isPending}>
+                  {createMutation.isPending || updateMutation.isPending ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      {editingId ? "Actualizando..." : "Creando..."}
+                    </>
+                  ) : (
+                    <>{editingId ? "Actualizar Usuario" : "Crear Usuario"}</>
                   )}
-                  {editingId ? "Actualizar" : "Crear"}
                 </Button>
                 {editingId && (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={handleCancelEdit}
-                  >
+                  <Button type="button" variant="outline" onClick={handleCancelEdit}>
                     Cancelar
                   </Button>
                 )}
               </div>
             </form>
           </Form>
-        </CardContent>
-      </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Usuarios</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {isLoadingUsers ? (
-            <div className="flex justify-center">
-              <Loader2 className="h-6 w-6 animate-spin" />
+          <div className="rounded-md border">
+            <div className="p-4">
+              <div className="grid grid-cols-6 gap-4 font-medium">
+                <div>Usuario</div>
+                <div>Rol</div>
+                <div>Departamento</div>
+                <div>Perfil</div>
+                <div className="col-span-2">Acciones</div>
+              </div>
             </div>
-          ) : users.length === 0 ? (
-            <p className="text-center text-muted-foreground">
-              No hay usuarios
-            </p>
-          ) : (
-            <div className="space-y-4">
-              {users.map((user: any) => (
-                <div
-                  key={user.id}
-                  className="flex items-center justify-between p-4 border rounded-md"
-                >
-                  <div>
-                    <h3 className="font-medium">{user.username}</h3>
-                    <div className="grid grid-cols-3 gap-2 text-xs text-muted-foreground mt-1">
-                      <p><strong>Rol:</strong> {user.role}</p>
-                      <p><strong>Departamento:</strong> {getDepartmentName(user.departmentId)}</p>
-                      <p><strong>Perfil:</strong> {getProfileName(user.profileId)}</p>
+            <div className="divide-y">
+              {isLoadingUsers ? (
+                <div className="p-4 text-center">
+                  <Loader2 className="mx-auto h-6 w-6 animate-spin" />
+                </div>
+              ) : users.length === 0 ? (
+                <div className="p-4 text-center">No hay usuarios registrados</div>
+              ) : (
+                users.map((user: any) => (
+                  <div key={user.id} className="grid grid-cols-6 gap-4 p-4">
+                    <div>{user.username}</div>
+                    <div>{user.role.charAt(0).toUpperCase() + user.role.slice(1)}</div>
+                    <div>{getDepartmentName(user.departmentId)}</div>
+                    <div>{getProfileName(user.profileId)}</div>
+                    <div className="col-span-2 flex gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleEdit(user)}
+                        disabled={editingId === user.id}
+                      >
+                        <Pencil className="h-4 w-4" />
+                        <span className="sr-only">Edit</span>
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={() => handleDelete(user.id)}
+                        disabled={deleteMutation.isPending}
+                      >
+                        {deleteMutation.isPending ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Trash className="h-4 w-4" />
+                        )}
+                        <span className="sr-only">Delete</span>
+                      </Button>
                     </div>
                   </div>
-                  <div className="flex space-x-2">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => handleEdit(user)}
-                    >
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => handleDelete(user.id)}
-                      disabled={user.username === "admin"} // Prevent deleting admin
-                    >
-                      <Trash className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
-          )}
-        </CardContent>
-      </Card>
-    </div>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
