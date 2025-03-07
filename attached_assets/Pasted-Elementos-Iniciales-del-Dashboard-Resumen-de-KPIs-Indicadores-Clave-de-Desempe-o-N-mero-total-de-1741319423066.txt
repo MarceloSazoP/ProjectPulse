@@ -1,0 +1,49 @@
+Elementos Iniciales del Dashboard:
+Resumen de KPIs (Indicadores Clave de Desempeño)
+
+Número total de proyectos: Muestra el total de proyectos activos.
+Proyectos en progreso: Proyectos que están en ejecución.
+Proyectos completados: Proyectos finalizados.
+Tareas pendientes: Tareas que aún no se han comenzado.
+Tareas en progreso: Tareas activas.
+Tareas completadas: Tareas terminadas.
+Proyectos con retraso: Proyectos cuya fecha límite se ha superado.
+Gráficos Visuales
+
+Gráfico de tareas por estado (To Do, In Progress, Done) para una visualización rápida.
+Gráfico de progreso de proyectos: Un gráfico de barras o líneas mostrando el avance de cada proyecto.
+Presupuesto vs. gasto: Un gráfico para visualizar cómo se está administrando el presupuesto de los proyectos en comparación con el gasto real.
+Lista de Proyectos Recientes
+
+Nombre del proyecto.
+Estado del proyecto (En progreso, Completado, Retrasado).
+Fecha de inicio y fecha estimada de finalización.
+Progreso porcentual (Porcentaje completado).
+Enlace rápido al detalle del proyecto.
+Lista de Tareas Recientes
+
+Nombre de la tarea.
+Estado (Pendiente, En progreso, Completada).
+Asignado a (Nombre del miembro del equipo).
+Fecha límite.
+Enlace rápido a la tarea para más detalles.
+Tareas Asignadas al Usuario
+Si el usuario está asignado a tareas específicas, estas deben mostrarse aquí con su progreso y fecha de entrega.
+
+Próximos Eventos y Fechas Importantes
+
+Próximas fechas de vencimiento de tareas y proyectos.
+Reuniones o entregas programadas.
+Alertas de vencimiento para tareas que están cerca de su fecha límite.
+Notificaciones
+
+Notificaciones recientes sobre tareas o proyectos.
+Alertas sobre retrasos o cambios en las fechas de entrega.
+Botón de acceso rápido
+
+Crear nuevo proyecto: Para iniciar un nuevo proyecto rápidamente.
+Crear nueva tarea: Para añadir una nueva tarea en el sistema.
+Acciones Rápidas
+
+Acción rápida de creación de tareas, proyectos y equipos.
+Filtros rápidos para visualizar tareas y proyectos por estado, fechas, asignados, etc.
