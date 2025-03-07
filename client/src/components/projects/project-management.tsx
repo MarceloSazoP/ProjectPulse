@@ -52,8 +52,8 @@ export default function ProjectManagement() {
     defaultValues: {
       name: "",
       description: "",
-      startDate: new Date(),
-      endDate: new Date(),
+      startDate: new Date().toISOString(),
+      endDate: new Date().toISOString(),
       status: "planning",
     },
   });
@@ -101,6 +101,15 @@ export default function ProjectManagement() {
       });
     },
   });
+
+  const startEdit = (project: Project) => {
+    setEditingProject(project);
+    form.reset({
+      ...project,
+      startDate: new Date(project.startDate).toISOString(),
+      endDate: new Date(project.endDate).toISOString(),
+    });
+  };
 
   const filteredProjects = projects.filter(project =>
     project.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -177,15 +186,14 @@ export default function ProjectManagement() {
                 <FormField
                   control={form.control}
                   name="startDate"
-                  render={({ field: { value, onChange, ...field } }) => (
+                  render={({ field }) => (
                     <FormItem>
                       <FormLabel>Start Date</FormLabel>
                       <FormControl>
                         <Input
                           type="date"
                           {...field}
-                          value={value instanceof Date ? value.toISOString().split('T')[0] : ''}
-                          onChange={(e) => onChange(new Date(e.target.value))}
+                          value={field.value ? new Date(field.value).toISOString().split('T')[0] : ''}
                         />
                       </FormControl>
                       <FormMessage />
@@ -195,15 +203,14 @@ export default function ProjectManagement() {
                 <FormField
                   control={form.control}
                   name="endDate"
-                  render={({ field: { value, onChange, ...field } }) => (
+                  render={({ field }) => (
                     <FormItem>
                       <FormLabel>End Date</FormLabel>
                       <FormControl>
                         <Input
                           type="date"
                           {...field}
-                          value={value instanceof Date ? value.toISOString().split('T')[0] : ''}
-                          onChange={(e) => onChange(new Date(e.target.value))}
+                          value={field.value ? new Date(field.value).toISOString().split('T')[0] : ''}
                         />
                       </FormControl>
                       <FormMessage />
@@ -283,10 +290,7 @@ export default function ProjectManagement() {
                     <Button
                       variant="ghost"
                       size="icon"
-                      onClick={() => {
-                        setEditingProject(project);
-                        form.reset(project);
-                      }}
+                      onClick={() => startEdit(project)}
                     >
                       <Edit className="h-4 w-4" />
                     </Button>
