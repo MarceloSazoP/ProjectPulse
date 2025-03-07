@@ -67,7 +67,11 @@ export class MemStorage implements IStorage {
 
   async createUser(insertUser: InsertUser): Promise<User> {
     const id = this.currentId.users++;
-    const user: User = { ...insertUser, id };
+    const user: User = { 
+      ...insertUser, 
+      id,
+      role: insertUser.role || 'member' 
+    };
     this.users.set(id, user);
     return user;
   }
@@ -83,7 +87,13 @@ export class MemStorage implements IStorage {
 
   async createProject(project: InsertProject): Promise<Project> {
     const id = this.currentId.projects++;
-    const newProject: Project = { ...project, id };
+    const newProject: Project = { 
+      ...project, 
+      id,
+      description: project.description || null,
+      budget: project.budget || null,
+      managerId: project.managerId || null
+    };
     this.projects.set(id, newProject);
     return newProject;
   }
@@ -113,7 +123,14 @@ export class MemStorage implements IStorage {
 
   async createTask(task: InsertTask): Promise<Task> {
     const id = this.currentId.tasks++;
-    const newTask: Task = { ...task, id };
+    const newTask: Task = {
+      ...task,
+      id,
+      description: task.description || null,
+      dueDate: task.dueDate || null,
+      projectId: task.projectId || null,
+      assigneeId: task.assigneeId || null
+    };
     this.tasks.set(id, newTask);
     return newTask;
   }
@@ -141,7 +158,11 @@ export class MemStorage implements IStorage {
 
   async createTeam(team: InsertTeam): Promise<Team> {
     const id = this.currentId.teams++;
-    const newTeam: Team = { ...team, id };
+    const newTeam: Team = {
+      ...team,
+      id,
+      description: team.description || null
+    };
     this.teams.set(id, newTeam);
     return newTeam;
   }

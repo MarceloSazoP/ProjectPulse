@@ -12,15 +12,8 @@ interface GanttChartProps {
 export default function GanttChart({ projectId }: GanttChartProps) {
   const { toast } = useToast();
 
-  const { data: tasks, isLoading } = useQuery<Task[]>({
+  const { data: tasks = [], isLoading } = useQuery<Task[]>({
     queryKey: ["/api/projects", projectId, "tasks"],
-    onError: (error: Error) => {
-      toast({
-        title: "Failed to load tasks",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
   });
 
   if (isLoading) {
@@ -31,7 +24,7 @@ export default function GanttChart({ projectId }: GanttChartProps) {
     );
   }
 
-  if (!tasks?.length) {
+  if (!tasks.length) {
     return (
       <div className="flex items-center justify-center h-64 text-muted-foreground">
         No tasks found for this project
@@ -40,12 +33,12 @@ export default function GanttChart({ projectId }: GanttChartProps) {
   }
 
   // Find date range for all tasks
-  const dates = tasks.flatMap(task => [
+  const dates = tasks.flatMap((task: Task) => [
     task.dueDate ? new Date(task.dueDate) : null
   ]).filter((date): date is Date => date !== null);
 
-  const minDate = new Date(Math.min(...dates.map(d => d.getTime())));
-  const maxDate = new Date(Math.max(...dates.map(d => d.getTime())));
+  const minDate = new Date(Math.min(...dates.map((d: Date) => d.getTime())));
+  const maxDate = new Date(Math.max(...dates.map((d: Date) => d.getTime())));
 
   // Calculate total days for chart width
   const totalDays = Math.ceil((maxDate.getTime() - minDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
@@ -77,7 +70,7 @@ export default function GanttChart({ projectId }: GanttChartProps) {
 
         {/* Tasks */}
         <div className="divide-y">
-          {tasks.map((task) => {
+          {tasks.map((task: Task) => {
             if (!task.dueDate) return null;
 
             const taskDate = new Date(task.dueDate);
