@@ -21,7 +21,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Project } from "@shared/schema";
-import { useProjectStore } from "@/lib/stores/project-store";
+import { useProjectStore } from "@/store/projects";
 import { useAuth } from "@/components/providers/auth-provider";
 import {
   DropdownMenu,
