@@ -194,11 +194,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-type NavigationSidebarProps = {
-  projects: Project[];
-  onViewChange: (view: 'kanban' | 'gantt' | 'projects' | 'users' | 'departments' | 'profiles' | null) => void;
-};
-
 export default function Sidebar({ projects, onViewChange }: NavigationSidebarProps) {
   const { selectedProject, setSelectedProject } = useProjectStore();
   const { user, logout } = useAuth();
