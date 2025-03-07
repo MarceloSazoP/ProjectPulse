@@ -125,7 +125,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Ruta para descargar un archivo específico
-  app.get("/api/projects/:projectId/files/:filename/download", requireAuth, async (req, res) => {
+  app.get("/api/projects/:projectId/files/:filename/download", async (req, res) => {
     const { filename } = req.params;
     const filePath = path.join(__dirname, '../uploads', filename);
     

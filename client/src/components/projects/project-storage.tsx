@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,6 +5,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Upload, Trash2, Download } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface ProjectStorageProps {
   projectId: number | null;
@@ -22,6 +22,7 @@ export default function ProjectStorage({
   const [uploadedFiles, setUploadedFiles] = useState<string[]>(existingFiles);
   const [isUploading, setIsUploading] = useState(false);
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     setUploadedFiles(existingFiles);
@@ -30,13 +31,13 @@ export default function ProjectStorage({
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       const fileList = Array.from(e.target.files);
-      
+
       // Filter for only .zip and .rar files
       const validFiles = fileList.filter(file => {
         const extension = file.name.toLowerCase().split('.').pop();
         return extension === 'zip' || extension === 'rar';
       });
-      
+
       if (validFiles.length !== fileList.length) {
         toast({
           title: "Archivos no válidos",
@@ -44,7 +45,7 @@ export default function ProjectStorage({
           variant: "destructive",
         });
       }
-      
+
       if (validFiles.length > 0) {
         // Solo permitir un archivo por proyecto
         const newFile = validFiles[0];
@@ -53,7 +54,7 @@ export default function ProjectStorage({
           onFilesChange([newFile]);
         }
       }
-      
+
       // Reset the input to allow selecting the same file again
       e.target.value = '';
     }
@@ -72,18 +73,21 @@ export default function ProjectStorage({
 
     try {
       await apiRequest("DELETE", `/api/projects/${projectId}/files/${filename}`);
-      setUploadedFiles([]);
+      setUploadedFiles(prevFiles => prevFiles.filter(file => file !== filename));
       toast({
         title: "Archivo eliminado",
         description: `El archivo ha sido eliminado correctamente`,
       });
-      
+
       // Limpiar cualquier archivo en la cola si existe
       setFiles([]);
-      
+
       if (onFilesChange) {
         onFilesChange([]);
       }
+
+      // No cerramos el modal, solo actualizamos el proyecto
+      queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
     } catch (error) {
       toast({
         title: "Error al eliminar el archivo",
@@ -117,7 +121,7 @@ export default function ProjectStorage({
       const result = await response.json();
       setUploadedFiles(result.filenames);
       setFiles([]);
-      
+
       toast({
         title: "Archivo subido",
         description: "El archivo ha sido subido exitosamente",

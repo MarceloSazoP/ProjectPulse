@@ -303,8 +303,17 @@ export default function ProjectManagement() {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => window.open(`/api/projects/${project.id}/files/${project.files[0]}/download`, '_blank')}
+                        onClick={() => {
+                          const url = `/api/projects/${project.id}/files/${project.files[0]}/download`;
+                          const link = document.createElement('a');
+                          link.href = url;
+                          link.target = '_blank';
+                          document.body.appendChild(link);
+                          link.click();
+                          document.body.removeChild(link);
+                        }}
                       >
+                        <FileDown className="h-4 w-4 mr-1" />
                         Descargar
                       </Button>
                     ) : (
