@@ -1,3 +1,4 @@
+
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { User, InsertUser, userRoles } from "@shared/schema";
 import {
@@ -56,9 +57,30 @@ export default function UserManagement() {
   const { toast } = useToast();
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [userToDelete, setUserToDelete] = useState<User | null>(null);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
 
-  const { data: users = [], isLoading } = useQuery<User[]>({
+  const { data: users = [], isLoading } = useQuery({
     queryKey: ["/api/users"],
+    queryFn: async () => {
+      const response = await apiRequest("GET", "/api/users");
+      return response.json();
+    }
+  });
+
+  const { data: departments = [] } = useQuery({
+    queryKey: ["/api/departments"],
+    queryFn: async () => {
+      const response = await apiRequest("GET", "/api/departments");
+      return response.json();
+    }
+  });
+
+  const { data: profiles = [] } = useQuery({
+    queryKey: ["/api/profiles"],
+    queryFn: async () => {
+      const response = await apiRequest("GET", "/api/profiles");
+      return response.json();
+    }
   });
 
   const form = useForm<InsertUser>({
@@ -67,25 +89,28 @@ export default function UserManagement() {
       username: "",
       password: "",
       role: "member",
+      departmentId: null,
+      profileId: null,
     },
   });
 
   const createUserMutation = useMutation({
     mutationFn: async (data: InsertUser) => {
-      const res = await apiRequest("POST", "/api/register", data);
+      const res = await apiRequest("POST", "/api/users", data);
       return res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/users"] });
       toast({
-        title: "User created",
-        description: "New user has been created successfully",
+        title: "Usuario creado",
+        description: "El usuario ha sido creado exitosamente",
       });
       form.reset();
+      setIsDialogOpen(false);
     },
     onError: (error: Error) => {
       toast({
-        title: "Failed to create user",
+        title: "Error al crear el usuario",
         description: error.message,
         variant: "destructive",
       });
@@ -100,14 +125,15 @@ export default function UserManagement() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/users"] });
       toast({
-        title: "User updated",
-        description: "User has been updated successfully",
+        title: "Usuario actualizado",
+        description: "El usuario ha sido actualizado exitosamente",
       });
       setEditingUser(null);
+      setIsDialogOpen(false);
     },
     onError: (error: Error) => {
       toast({
-        title: "Failed to update user",
+        title: "Error al actualizar el usuario",
         description: error.message,
         variant: "destructive",
       });
@@ -121,14 +147,14 @@ export default function UserManagement() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/users"] });
       toast({
-        title: "User deleted",
-        description: "User has been deleted successfully",
+        title: "Usuario eliminado",
+        description: "El usuario ha sido eliminado exitosamente",
       });
       setUserToDelete(null);
     },
     onError: (error: Error) => {
       toast({
-        title: "Failed to delete user",
+        title: "Error al eliminar el usuario",
         description: error.message,
         variant: "destructive",
       });
@@ -139,9 +165,24 @@ export default function UserManagement() {
     setEditingUser(user);
     form.reset({
       username: user.username,
-      password: "",
+      password: "", // No incluimos la contraseña por seguridad
       role: user.role,
+      departmentId: user.departmentId,
+      profileId: user.profileId,
     });
+    setIsDialogOpen(true);
+  };
+
+  const openCreateDialog = () => {
+    setEditingUser(null);
+    form.reset({
+      username: "",
+      password: "",
+      role: "member",
+      departmentId: null,
+      profileId: null,
+    });
+    setIsDialogOpen(true);
   };
 
   if (isLoading) {
@@ -156,179 +197,255 @@ export default function UserManagement() {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight">User Management</h2>
+          <h2 className="text-3xl font-bold tracking-tight">Gestión de Usuarios</h2>
           <p className="text-muted-foreground">
-            Manage user accounts and their roles
+            Administra las cuentas de usuarios y sus roles
           </p>
         </div>
-        <Dialog>
-          <DialogTrigger asChild>
-            <Button>
-              <UserPlus className="mr-2 h-4 w-4" />
-              Add User
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>
-                {editingUser ? "Edit User" : "Create New User"}
-              </DialogTitle>
-              <DialogDescription>
-                {editingUser
-                  ? "Update user information and permissions"
-                  : "Add a new user to the system"}
-              </DialogDescription>
-            </DialogHeader>
-            <Form {...form}>
-              <form
-                onSubmit={form.handleSubmit((data) =>
-                  editingUser
-                    ? updateUserMutation.mutate({ id: editingUser.id, data })
-                    : createUserMutation.mutate(data)
-                )}
-                className="space-y-4"
-              >
-                <FormField
-                  control={form.control}
-                  name="username"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Username</FormLabel>
-                      <FormControl>
-                        <Input {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="password"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>
-                        {editingUser ? "New Password (optional)" : "Password"}
-                      </FormLabel>
-                      <FormControl>
-                        <Input type="password" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="role"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Role</FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        defaultValue={field.value}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select a role" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {userRoles.map((role) => (
-                            <SelectItem key={role} value={role}>
-                              {role.charAt(0).toUpperCase() + role.slice(1)}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <Button
-                  type="submit"
-                  className="w-full"
-                  disabled={createUserMutation.isPending || updateUserMutation.isPending}
-                >
-                  {(createUserMutation.isPending || updateUserMutation.isPending) && (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  )}
-                  {editingUser ? "Update User" : "Create User"}
-                </Button>
-              </form>
-            </Form>
-          </DialogContent>
-        </Dialog>
+        <Button onClick={openCreateDialog}>
+          <UserPlus className="mr-2 h-4 w-4" />
+          Añadir Usuario
+        </Button>
       </div>
 
       <div className="border rounded-lg">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Username</TableHead>
-              <TableHead>Role</TableHead>
-              <TableHead className="w-[100px]">Actions</TableHead>
+              <TableHead>Usuario</TableHead>
+              <TableHead>Rol</TableHead>
+              <TableHead>Departamento</TableHead>
+              <TableHead>Perfil</TableHead>
+              <TableHead className="w-[100px]">Acciones</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {users.map((user) => (
-              <TableRow key={user.id}>
-                <TableCell>{user.username}</TableCell>
-                <TableCell>
-                  <Badge
-                    variant={
-                      user.role === "admin"
-                        ? "destructive"
-                        : user.role === "manager"
-                        ? "default"
-                        : "secondary"
-                    }
-                  >
-                    {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
-                  </Badge>
-                </TableCell>
-                <TableCell>
-                  <div className="flex items-center space-x-2">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => startEdit(user)}
-                    >
-                      <Edit2 className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => setUserToDelete(user)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
+            {users.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={5} className="text-center h-24">
+                  No hay usuarios disponibles
                 </TableCell>
               </TableRow>
-            ))}
+            ) : (
+              users.map((user) => (
+                <TableRow key={user.id}>
+                  <TableCell>{user.username}</TableCell>
+                  <TableCell>
+                    <Badge
+                      variant={
+                        user.role === "admin"
+                          ? "destructive"
+                          : user.role === "manager"
+                          ? "default"
+                          : "secondary"
+                      }
+                    >
+                      {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    {user.departmentId ? 
+                      departments.find(d => d.id === user.departmentId)?.name || 'N/A' 
+                      : 'N/A'}
+                  </TableCell>
+                  <TableCell>
+                    {user.profileId ? 
+                      profiles.find(p => p.id === user.profileId)?.name || 'N/A' 
+                      : 'N/A'}
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center space-x-2">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => startEdit(user)}
+                      >
+                        <Edit2 className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => setUserToDelete(user)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
           </TableBody>
         </Table>
       </div>
 
+      {/* Dialog para crear/editar usuario */}
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {editingUser ? "Editar Usuario" : "Crear Nuevo Usuario"}
+            </DialogTitle>
+            <DialogDescription>
+              {editingUser
+                ? "Actualiza la información y permisos del usuario"
+                : "Añade un nuevo usuario al sistema"}
+            </DialogDescription>
+          </DialogHeader>
+          <Form {...form}>
+            <form
+              onSubmit={form.handleSubmit((data) =>
+                editingUser
+                  ? updateUserMutation.mutate({ id: editingUser.id, data })
+                  : createUserMutation.mutate(data)
+              )}
+              className="space-y-4"
+            >
+              <FormField
+                control={form.control}
+                name="username"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Nombre de usuario</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="password"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>
+                      {editingUser ? "Nueva Contraseña (opcional)" : "Contraseña"}
+                    </FormLabel>
+                    <FormControl>
+                      <Input type="password" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="role"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Rol</FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Seleccionar un rol" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {userRoles.map((role) => (
+                          <SelectItem key={role} value={role}>
+                            {role.charAt(0).toUpperCase() + role.slice(1)}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="departmentId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Departamento</FormLabel>
+                    <Select
+                      onValueChange={(value) => field.onChange(value ? parseInt(value) : null)}
+                      defaultValue={field.value?.toString() || ""}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Seleccionar departamento" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="">Ninguno</SelectItem>
+                        {departments.map((dept) => (
+                          <SelectItem key={dept.id} value={dept.id.toString()}>
+                            {dept.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="profileId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Perfil</FormLabel>
+                    <Select
+                      onValueChange={(value) => field.onChange(value ? parseInt(value) : null)}
+                      defaultValue={field.value?.toString() || ""}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Seleccionar perfil" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="">Ninguno</SelectItem>
+                        {profiles.map((profile) => (
+                          <SelectItem key={profile.id} value={profile.id.toString()}>
+                            {profile.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <Button
+                type="submit"
+                className="w-full"
+                disabled={createUserMutation.isPending || updateUserMutation.isPending}
+              >
+                {(createUserMutation.isPending || updateUserMutation.isPending) && (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                )}
+                {editingUser ? "Actualizar Usuario" : "Crear Usuario"}
+              </Button>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog de confirmación para eliminar */}
       <AlertDialog open={!!userToDelete} onOpenChange={() => setUserToDelete(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
             <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete the user
-              account and remove their access to the system.
+              Esta acción no se puede deshacer. Se eliminará permanentemente la cuenta
+              de usuario y se eliminará su acceso al sistema.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => userToDelete && deleteUserMutation.mutate(userToDelete.id)}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               {deleteUserMutation.isPending ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                "Delete"
-              )}
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              ) : null}
+              Eliminar
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
