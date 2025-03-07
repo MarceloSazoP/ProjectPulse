@@ -169,7 +169,6 @@ export default function Sidebar({ projects, onViewChange }: NavigationSidebarPro
   );
 }
 import { cn } from "@/lib/utils";
-import { Project } from "@shared/schema";
 import { useRouter } from "@tanstack/react-router";
 import React from "react";
 import {
