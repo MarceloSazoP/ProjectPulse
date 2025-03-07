@@ -1,7 +1,6 @@
 
 import { query } from '../db';
 
-// Interfaz para los datos de una tarea
 export interface Task {
   id?: number;
   name: string;
@@ -24,23 +23,13 @@ export async function getAllTasks(): Promise<Task[]> {
   return [
     {
       id: 1,
-      name: 'Tarea Demo 1',
+      name: 'Tarea Demo',
       description: 'Esta es una tarea de demostración',
       status: 'todo',
       priority: 'medium',
       due_date: new Date(new Date().setDate(new Date().getDate() + 7)),
       project_id: 1,
       assignee_id: 1
-    },
-    {
-      id: 2,
-      name: 'Tarea Demo 2',
-      description: 'Esta es otra tarea de demostración',
-      status: 'in_progress',
-      priority: 'high',
-      due_date: new Date(new Date().setDate(new Date().getDate() + 3)),
-      project_id: 1,
-      assignee_id: 2
     }
   ];
 }
@@ -52,12 +41,12 @@ export async function getTasksByProject(projectId: number): Promise<Task[]> {
   // return await query(sql, [projectId]);
   
   // Simulación para desarrollo
-  console.log('Simulando consulta:', sql, [projectId]);
+  console.log('Simulando consulta:', sql, 'con projectId:', projectId);
   return [
     {
       id: 1,
-      name: 'Tarea del proyecto ' + projectId,
-      description: 'Esta es una tarea del proyecto ' + projectId,
+      name: 'Tarea Demo 1',
+      description: 'Esta es una tarea de demostración',
       status: 'todo',
       priority: 'medium',
       due_date: new Date(new Date().setDate(new Date().getDate() + 7)),
@@ -66,8 +55,8 @@ export async function getTasksByProject(projectId: number): Promise<Task[]> {
     },
     {
       id: 2,
-      name: 'Otra tarea del proyecto ' + projectId,
-      description: 'Esta es otra tarea del proyecto ' + projectId,
+      name: 'Tarea Demo 2',
+      description: 'Esta es otra tarea de demostración',
       status: 'in_progress',
       priority: 'high',
       due_date: new Date(new Date().setDate(new Date().getDate() + 3)),
@@ -81,104 +70,151 @@ export async function getTasksByProject(projectId: number): Promise<Task[]> {
 export async function getTaskById(id: number): Promise<Task | null> {
   const sql = 'SELECT * FROM tasks WHERE id = $1';
   // En producción, descomentar la siguiente línea:
-  // const results = await query(sql, [id]);
-  // return results.length ? results[0] : null;
+  // const result = await query(sql, [id]);
+  // return result.length > 0 ? result[0] : null;
   
   // Simulación para desarrollo
-  console.log('Simulando consulta:', sql, [id]);
-  return {
-    id: id,
-    name: 'Tarea ' + id,
-    description: 'Descripción de la tarea ' + id,
-    status: 'todo',
-    priority: 'medium',
-    due_date: new Date(new Date().setDate(new Date().getDate() + 7)),
-    project_id: 1,
-    assignee_id: 1
-  };
+  console.log('Simulando consulta:', sql, 'con id:', id);
+  if (id === 1) {
+    return {
+      id: 1,
+      name: 'Tarea Demo',
+      description: 'Esta es una tarea de demostración',
+      status: 'todo',
+      priority: 'medium',
+      due_date: new Date(new Date().setDate(new Date().getDate() + 7)),
+      project_id: 1,
+      assignee_id: 1
+    };
+  }
+  return null;
 }
 
 // Crear una nueva tarea
-export async function createTask(taskData: Task): Promise<Task> {
-  const { name, description, status, priority, due_date, project_id, assignee_id } = taskData;
-  
+export async function createTask(task: Task): Promise<Task> {
   const sql = `
     INSERT INTO tasks (name, description, status, priority, due_date, project_id, assignee_id)
     VALUES ($1, $2, $3, $4, $5, $6, $7)
     RETURNING *
   `;
-  
-  const values = [name, description, status, priority, due_date, project_id, assignee_id];
-  
   // En producción, descomentar la siguiente línea:
-  // const result = await query(sql, values);
-  // return result[0];
+  // return (await query(sql, [
+  //   task.name,
+  //   task.description,
+  //   task.status,
+  //   task.priority,
+  //   task.due_date,
+  //   task.project_id,
+  //   task.assignee_id
+  // ]))[0];
   
   // Simulación para desarrollo
-  console.log('Simulando consulta:', sql, values);
+  console.log('Simulando consulta:', sql, 'con datos:', task);
   return {
-    id: Math.floor(Math.random() * 1000),
-    ...taskData
+    id: Math.floor(Math.random() * 1000) + 1,
+    ...task
   };
 }
 
-// Actualizar una tarea
-export async function updateTask(id: number, taskData: Partial<Task>): Promise<Task | null> {
-  // Construir la consulta de actualización dinámicamente
+// Actualizar una tarea existente
+export async function updateTask(id: number, task: Partial<Task>): Promise<Task | null> {
+  // Primero, verificar si la tarea existe
+  const existingTask = await getTaskById(id);
+  if (!existingTask) {
+    return null;
+  }
+
   const updates: string[] = [];
   const values: any[] = [];
   let paramCount = 1;
-  
-  // Añadir cada campo a actualizar
-  for (const [key, value] of Object.entries(taskData)) {
-    if (value !== undefined) {
-      updates.push(`${key} = $${paramCount}`);
-      values.push(value);
-      paramCount++;
-    }
+
+  // Construir dinámicamente la consulta SQL según los campos proporcionados
+  if (task.name !== undefined) {
+    updates.push(`name = $${paramCount++}`);
+    values.push(task.name);
   }
-  
-  // Añadir el ID como último parámetro
-  values.push(id);
-  
+  if (task.description !== undefined) {
+    updates.push(`description = $${paramCount++}`);
+    values.push(task.description);
+  }
+  if (task.status !== undefined) {
+    updates.push(`status = $${paramCount++}`);
+    values.push(task.status);
+  }
+  if (task.priority !== undefined) {
+    updates.push(`priority = $${paramCount++}`);
+    values.push(task.priority);
+  }
+  if (task.due_date !== undefined) {
+    updates.push(`due_date = $${paramCount++}`);
+    values.push(task.due_date);
+  }
+  if (task.project_id !== undefined) {
+    updates.push(`project_id = $${paramCount++}`);
+    values.push(task.project_id);
+  }
+  if (task.assignee_id !== undefined) {
+    updates.push(`assignee_id = $${paramCount++}`);
+    values.push(task.assignee_id);
+  }
+
+  // Si no hay nada que actualizar, devolver la tarea existente
   if (updates.length === 0) {
-    return getTaskById(id);
+    return existingTask;
   }
-  
+
   const sql = `
     UPDATE tasks
     SET ${updates.join(', ')}
     WHERE id = $${paramCount}
     RETURNING *
   `;
-  
+  values.push(id);
+
   // En producción, descomentar la siguiente línea:
-  // const results = await query(sql, values);
-  // return results.length ? results[0] : null;
+  // return (await query(sql, values))[0];
   
   // Simulación para desarrollo
-  console.log('Simulando consulta:', sql, values);
+  console.log('Simulando consulta:', sql, 'con valores:', values);
   return {
-    id: id,
-    name: taskData.name || 'Tarea actualizada',
-    description: taskData.description || 'Descripción actualizada',
-    status: taskData.status || 'in_progress',
-    priority: taskData.priority || 'high',
-    due_date: taskData.due_date || new Date(new Date().setDate(new Date().getDate() + 5)),
-    project_id: taskData.project_id || 1,
-    assignee_id: taskData.assignee_id || 2
+    ...existingTask,
+    ...task,
+    id
   };
 }
 
 // Eliminar una tarea
 export async function deleteTask(id: number): Promise<boolean> {
   const sql = 'DELETE FROM tasks WHERE id = $1 RETURNING id';
-  
   // En producción, descomentar la siguiente línea:
-  // const results = await query(sql, [id]);
-  // return results.length > 0;
+  // const result = await query(sql, [id]);
+  // return result.length > 0;
   
   // Simulación para desarrollo
-  console.log('Simulando consulta:', sql, [id]);
+  console.log('Simulando consulta:', sql, 'con id:', id);
   return true;
+}
+
+// Asignar tarea a un usuario
+export async function assignTaskToUser(taskId: number, userId: number): Promise<Task | null> {
+  const existingTask = await getTaskById(taskId);
+  if (!existingTask) {
+    return null;
+  }
+
+  const sql = `
+    UPDATE tasks
+    SET assignee_id = $1
+    WHERE id = $2
+    RETURNING *
+  `;
+  // En producción, descomentar la siguiente línea:
+  // return (await query(sql, [userId, taskId]))[0];
+  
+  // Simulación para desarrollo
+  console.log('Simulando consulta:', sql, 'con userId:', userId, 'y taskId:', taskId);
+  return {
+    ...existingTask,
+    assignee_id: userId
+  };
 }

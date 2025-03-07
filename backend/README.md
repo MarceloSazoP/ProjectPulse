@@ -1,46 +1,56 @@
 
-# Backend API para Pulsev1
+# Backend de ProjectPulse
 
-Este directorio contiene el backend para el sistema de gestión de proyectos Pulsev1, diseñado para conectarse a una base de datos PostgreSQL.
+Este backend proporciona una API para el sistema de gestión de proyectos "ProjectPulse".
 
-## Estructura
+## Estructura de la Base de Datos
 
-- `index.ts`: Punto de entrada principal del backend
-- `db.ts`: Configuración de la conexión a la base de datos
-- `routes.ts`: Definición de rutas de la API
-- `controllers/`: Controladores para cada entidad
-- `services/`: Servicios de negocio para cada entidad
-- `schemas/`: Esquemas de validación usando Zod
-- `sql/`: Scripts SQL para la creación de tablas
-- `deploy-helpers.ts`: Funciones auxiliares para el despliegue
+La base de datos está diseñada siguiendo un modelo relacional con PostgreSQL. Las principales entidades son:
 
-## Configuración para producción
+- **Usuarios**: Información de usuarios del sistema
+- **Perfiles**: Datos de perfil extendidos de los usuarios
+- **Roles**: Roles de los usuarios (admin, manager, member, etc.)
+- **Permisos**: Permisos específicos para cada rol
+- **Departamentos**: Divisiones organizativas
+- **Equipos**: Grupos de usuarios que trabajan juntos
+- **Proyectos**: Proyectos con fechas, estado y descripción
+- **Tableros Kanban**: Para la gestión ágil de tareas
+- **Tareas Gantt**: Para planificación y seguimiento de cronogramas
 
-Para usar este backend en producción, debes:
+## Endpoints de la API
 
-1. Tener una base de datos PostgreSQL llamada "Pulsev1" configurada
-2. Editar `db.ts` para usar los parámetros de conexión correctos
-3. Descomentar las líneas relevantes que están marcadas para producción
-4. Ejecutar el script SQL en `sql/create_tables.sql` para crear las tablas necesarias
-
-## API Endpoints
+La API proporciona los siguientes endpoints principales:
 
 ### Proyectos
-- `GET /api/v1/projects`: Obtener todos los proyectos
-- `GET /api/v1/projects/:id`: Obtener un proyecto por ID
-- `POST /api/v1/projects`: Crear un nuevo proyecto
-- `PUT /api/v1/projects/:id`: Actualizar un proyecto existente
-- `DELETE /api/v1/projects/:id`: Eliminar un proyecto
+- `GET /api/projects`: Obtener todos los proyectos
+- `GET /api/projects/:id`: Obtener un proyecto por ID
+- `POST /api/projects`: Crear un nuevo proyecto
+- `PUT /api/projects/:id`: Actualizar un proyecto existente
+- `DELETE /api/projects/:id`: Eliminar un proyecto
+- `GET /api/projects/:projectId/teams`: Obtener equipos de un proyecto
+- `POST /api/projects/team-assignment`: Asignar un equipo a un proyecto
 
 ### Tareas
-- `GET /api/v1/tasks`: Obtener todas las tareas
-- `GET /api/v1/projects/:projectId/tasks`: Obtener tareas de un proyecto
-- `GET /api/v1/tasks/:id`: Obtener una tarea por ID
-- `POST /api/v1/tasks`: Crear una nueva tarea
-- `PUT /api/v1/tasks/:id`: Actualizar una tarea existente
-- `DELETE /api/v1/tasks/:id`: Eliminar una tarea
+- `GET /api/tasks`: Obtener todas las tareas
+- `GET /api/tasks/:id`: Obtener una tarea por ID
+- `GET /api/projects/:projectId/tasks`: Obtener tareas de un proyecto
+- `POST /api/tasks`: Crear una nueva tarea
+- `PUT /api/tasks/:id`: Actualizar una tarea existente
+- `DELETE /api/tasks/:id`: Eliminar una tarea
+- `POST /api/tasks/:taskId/assign`: Asignar una tarea a un usuario
 
-## Uso
+Se irán implementando más endpoints a medida que se desarrollen nuevas funcionalidades.
 
-Este backend está actualmente configurado para desarrollo (no se conecta realmente a la base de datos). 
-Para usar en producción, busca comentarios que indican "En producción, descomentar..." y habilita ese código.
+## Configuración de Desarrollo
+
+Para el desarrollo, este backend está configurado para simular las consultas a la base de datos, permitiendo el desarrollo sin necesidad de una conexión activa a PostgreSQL.
+
+## Conexión a la Base de Datos
+
+Para producción, se deben descomentar las líneas adecuadas en los archivos de servicios y habilitar la conexión real a la base de datos PostgreSQL "Pulsev1" con las credenciales:
+- Usuario: postgres
+- Contraseña: admin
+
+## Tipos de Datos y Validación
+
+Se utilizan esquemas de validación con Zod para garantizar la integridad de los datos que se envían a la API.
