@@ -389,22 +389,5 @@ export default function KanbanBoard({ projectId }: KanbanBoardProps) {
 }
 
 
-// Added BreadcrumbNav component -  This is a placeholder, adapt to your actual styling and routing
-const BreadcrumbNav = ({ items }: { items: { label: string; href?: string }[] }) => {
-  return (
-    <nav className="flex gap-2">
-      {items.map((item, index) => (
-        <span key={index} className="text-sm">
-          {item.href ? (
-            <a href={item.href} className="text-blue-500 hover:underline">
-              {item.label}
-            </a>
-          ) : (
-            item.label
-          )}
-          {index < items.length - 1 && <span className="text-gray-400">/</span>}
-        </span>
-      ))}
-    </nav>
-  );
-};
+// Import the BreadcrumbNav component from the navigation directory
+import { BreadcrumbNav } from "@/components/navigation/breadcrumb";
