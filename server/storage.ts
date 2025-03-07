@@ -160,7 +160,8 @@ export class MemStorage implements IStorage {
     // First, delete any existing files physically if needed
     // (This would need to be implemented if required)
 
-    project.files = filenames;
+    // Asegurar que solo se guarde un archivo por proyecto
+    project.files = filenames.length > 0 ? [filenames[0]] : [];
     this.projects.set(projectId, project);
   }
 

@@ -527,7 +527,6 @@ export default function ProjectManagement() {
                   <div className="space-y-2">
                     <Input
                       type="file"
-                      multiple
                       accept=".zip,.rar"
                       onChange={(e) => {
                         if (e.target.files && e.target.files.length > 0) {
@@ -537,7 +536,8 @@ export default function ProjectManagement() {
                           });
 
                           if (files.length > 0) {
-                            setUploadedFiles(files);
+                            // Solo permitir un archivo por proyecto
+                            setUploadedFiles([files[0]]);
                           } else {
                             toast({
                               title: "Archivos no válidos",
@@ -553,7 +553,7 @@ export default function ProjectManagement() {
                     />
                     {uploadedFiles.length > 0 && (
                       <div className="text-sm text-muted-foreground">
-                        {uploadedFiles.length} archivo(s) seleccionado(s)
+                        Archivo seleccionado: {uploadedFiles[0].name}
                       </div>
                     )}
                   </div>

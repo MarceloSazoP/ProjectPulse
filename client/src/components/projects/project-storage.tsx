@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Upload, Trash2, FileText, Loader2 } from "lucide-react";
-import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { Loader2, Upload, Trash2, Download } from "lucide-react";
+import { apiRequest } from "@/lib/queryClient";
 
 interface ProjectStorageProps {
   projectId: number | null;
@@ -22,16 +23,20 @@ export default function ProjectStorage({
   const [isUploading, setIsUploading] = useState(false);
   const { toast } = useToast();
 
+  useEffect(() => {
+    setUploadedFiles(existingFiles);
+  }, [existingFiles]);
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       const fileList = Array.from(e.target.files);
-
+      
       // Filter for only .zip and .rar files
       const validFiles = fileList.filter(file => {
         const extension = file.name.toLowerCase().split('.').pop();
         return extension === 'zip' || extension === 'rar';
       });
-
+      
       if (validFiles.length !== fileList.length) {
         toast({
           title: "Archivos no válidos",
@@ -39,14 +44,16 @@ export default function ProjectStorage({
           variant: "destructive",
         });
       }
-
+      
       if (validFiles.length > 0) {
-        setFiles(prev => [...prev, ...validFiles]);
+        // Solo permitir un archivo por proyecto
+        const newFile = validFiles[0];
+        setFiles([newFile]);
         if (onFilesChange) {
-          onFilesChange([...files, ...validFiles]);
+          onFilesChange([newFile]);
         }
       }
-
+      
       // Reset the input to allow selecting the same file again
       e.target.value = '';
     }
@@ -65,11 +72,18 @@ export default function ProjectStorage({
 
     try {
       await apiRequest("DELETE", `/api/projects/${projectId}/files/${filename}`);
-      setUploadedFiles(prev => prev.filter(f => f !== filename));
+      setUploadedFiles([]);
       toast({
         title: "Archivo eliminado",
-        description: `El archivo ${filename} ha sido eliminado`,
+        description: `El archivo ha sido eliminado correctamente`,
       });
+      
+      // Limpiar cualquier archivo en la cola si existe
+      setFiles([]);
+      
+      if (onFilesChange) {
+        onFilesChange([]);
+      }
     } catch (error) {
       toast({
         title: "Error al eliminar el archivo",
@@ -101,17 +115,17 @@ export default function ProjectStorage({
       }
 
       const result = await response.json();
-      setUploadedFiles(prev => [...prev, ...result.filenames]);
+      setUploadedFiles(result.filenames);
       setFiles([]);
-
+      
       toast({
-        title: "Archivos subidos",
-        description: "Los archivos han sido subidos exitosamente",
+        title: "Archivo subido",
+        description: "El archivo ha sido subido exitosamente",
       });
     } catch (error) {
       toast({
-        title: "Error al subir archivos",
-        description: "No se pudieron subir los archivos",
+        title: "Error al subir archivo",
+        description: "No se pudo subir el archivo",
         variant: "destructive",
       });
     } finally {
@@ -119,78 +133,81 @@ export default function ProjectStorage({
     }
   };
 
+  const downloadFile = (filename: string) => {
+    if (!projectId) return;
+    window.open(`/api/projects/${projectId}/files/${filename}/download`, '_blank');
+  };
+
   return (
     <div className="space-y-4">
-      <div className="flex flex-col space-y-2">
-        <Label htmlFor="files">Archivos del proyecto</Label>
-        <div className="flex items-center gap-2">
-          <Input 
-            id="files" 
-            type="file" 
-            multiple 
-            onChange={handleFileChange} 
-            className="flex-1"
-          />
-          <Button 
-            onClick={uploadFiles} 
-            disabled={files.length === 0 || isUploading || !projectId}
-            type="button"
-          >
-            {isUploading ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            ) : (
-              <Upload className="mr-2 h-4 w-4" />
-            )}
-            Subir
-          </Button>
-        </div>
-      </div>
-
-      {files.length > 0 && (
-        <div className="border rounded-md p-2">
-          <p className="text-sm font-medium mb-2">Archivos para subir:</p>
-          <ul className="space-y-2">
-            {files.map((file, index) => (
-              <li key={index} className="flex items-center justify-between py-1 px-2 bg-muted/50 rounded">
-                <div className="flex items-center">
-                  <FileText className="h-4 w-4 mr-2" />
-                  <span className="text-sm">{file.name}</span>
-                </div>
+      {uploadedFiles.length > 0 ? (
+        <div className="space-y-2">
+          <h4 className="text-sm font-medium">Documentación actual:</h4>
+          {uploadedFiles.map((filename, index) => (
+            <div key={index} className="flex items-center justify-between p-2 border rounded-md">
+              <span className="text-sm truncate flex-1">{filename}</span>
+              <div className="flex gap-2">
                 <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  onClick={() => removeFile(index)}
-                  type="button"
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => downloadFile(filename)}
                 >
-                  <Trash2 className="h-4 w-4 text-destructive" />
+                  <Download className="h-4 w-4 mr-1" />
+                  Descargar
                 </Button>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-
-      {uploadedFiles.length > 0 && (
-        <div className="border rounded-md p-2">
-          <p className="text-sm font-medium mb-2">Archivos subidos:</p>
-          <ul className="space-y-2">
-            {uploadedFiles.map((file, index) => (
-              <li key={index} className="flex items-center justify-between py-1 px-2 bg-muted/50 rounded">
-                <div className="flex items-center">
-                  <FileText className="h-4 w-4 mr-2" />
-                  <span className="text-sm">{file}</span>
-                </div>
                 <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  onClick={() => removeUploadedFile(file)}
-                  type="button"
+                  variant="destructive" 
+                  size="sm" 
+                  onClick={() => removeUploadedFile(filename)}
                 >
-                  <Trash2 className="h-4 w-4 text-destructive" />
+                  <Trash2 className="h-4 w-4 mr-1" />
+                  Eliminar
                 </Button>
-              </li>
-            ))}
-          </ul>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="flex flex-col space-y-2">
+          <Label htmlFor="files">Subir documentación</Label>
+          <div className="flex items-center gap-2">
+            <Input 
+              id="files" 
+              type="file"
+              accept=".zip,.rar"
+              onChange={handleFileChange} 
+              className="flex-1"
+            />
+            <Button 
+              onClick={uploadFiles} 
+              disabled={files.length === 0 || isUploading || !projectId}
+              type="button"
+            >
+              {isUploading ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Upload className="mr-2 h-4 w-4" />
+              )}
+              Subir
+            </Button>
+          </div>
+          {files.length > 0 && (
+            <div className="mt-2">
+              <h4 className="text-sm font-medium">Archivo seleccionado:</h4>
+              {files.map((file, index) => (
+                <div key={index} className="flex items-center justify-between p-2 border rounded-md mt-1">
+                  <span className="text-sm truncate">{file.name}</span>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={() => removeFile(index)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>
