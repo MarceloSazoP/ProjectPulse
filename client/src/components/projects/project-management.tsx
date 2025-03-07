@@ -577,6 +577,7 @@ export default function ProjectManagement() {
                     projectId={editingProject.id} 
                     existingFiles={editingProject.files || []}
                     onFilesChange={handleFilesChange}
+                    key={`file-storage-${editingProject.id}-${JSON.stringify(editingProject.files)}`}
                   />
                 ) : (
                   <div className="space-y-2">
