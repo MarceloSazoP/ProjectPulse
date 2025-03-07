@@ -30,14 +30,17 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { insertProjectSchema } from "@shared/schema";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Plus, Download, Edit, Search } from "lucide-react";
+import { Loader2, Plus, Download, Edit, Search, KanbanSquare, GanttChartSquare } from "lucide-react";
 import { useState } from "react";
+import KanbanBoard from "./kanban-board";
+import GanttChart from "./gantt-chart";
 
 export default function ProjectManagement() {
   const { toast } = useToast();
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
+  const [selectedView, setSelectedView] = useState<{ type: 'kanban' | 'gantt' | null, projectId: number | null }>({ type: null, projectId: null });
   const itemsPerPage = 10;
 
   const { data: projects = [], isLoading } = useQuery<Project[]>({
@@ -49,15 +52,20 @@ export default function ProjectManagement() {
     defaultValues: {
       name: "",
       description: "",
-      startDate: new Date().toISOString(),
-      endDate: new Date().toISOString(),
+      startDate: new Date(),
+      endDate: new Date(),
       status: "planning",
     },
   });
 
   const createProjectMutation = useMutation({
     mutationFn: async (data: InsertProject) => {
-      const res = await apiRequest("POST", "/api/projects", data);
+      const formattedData = {
+        ...data,
+        startDate: new Date(data.startDate).toISOString(),
+        endDate: new Date(data.endDate).toISOString(),
+      };
+      const res = await apiRequest("POST", "/api/projects", formattedData);
       return res.json();
     },
     onSuccess: () => {
@@ -79,7 +87,12 @@ export default function ProjectManagement() {
 
   const updateProjectMutation = useMutation({
     mutationFn: async ({ id, data }: { id: number; data: Partial<Project> }) => {
-      const res = await apiRequest("PUT", `/api/projects/${id}`, data);
+      const formattedData = {
+        ...data,
+        startDate: data.startDate ? new Date(data.startDate).toISOString() : undefined,
+        endDate: data.endDate ? new Date(data.endDate).toISOString() : undefined,
+      };
+      const res = await apiRequest("PUT", `/api/projects/${id}`, formattedData);
       return res.json();
     },
     onSuccess: () => {
@@ -165,7 +178,7 @@ export default function ProjectManagement() {
                     <FormItem>
                       <FormLabel>Description</FormLabel>
                       <FormControl>
-                        <Input {...field} />
+                        <Input {...field} value={field.value || ''} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -174,11 +187,16 @@ export default function ProjectManagement() {
                 <FormField
                   control={form.control}
                   name="startDate"
-                  render={({ field }) => (
+                  render={({ field: { value, onChange, ...field } }) => (
                     <FormItem>
                       <FormLabel>Start Date</FormLabel>
                       <FormControl>
-                        <Input type="date" {...field} />
+                        <Input 
+                          type="date" 
+                          {...field}
+                          value={value instanceof Date ? value.toISOString().split('T')[0] : ''} 
+                          onChange={(e) => onChange(new Date(e.target.value))}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -187,11 +205,16 @@ export default function ProjectManagement() {
                 <FormField
                   control={form.control}
                   name="endDate"
-                  render={({ field }) => (
+                  render={({ field: { value, onChange, ...field } }) => (
                     <FormItem>
                       <FormLabel>End Date</FormLabel>
                       <FormControl>
-                        <Input type="date" {...field} />
+                        <Input 
+                          type="date" 
+                          {...field}
+                          value={value instanceof Date ? value.toISOString().split('T')[0] : ''} 
+                          onChange={(e) => onChange(new Date(e.target.value))}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -222,6 +245,22 @@ export default function ProjectManagement() {
           className="max-w-sm"
         />
       </div>
+
+      <Dialog open={selectedView.type !== null} onOpenChange={() => setSelectedView({ type: null, projectId: null })}>
+        <DialogContent className="max-w-4xl">
+          <DialogHeader>
+            <DialogTitle>
+              {selectedView.type === 'kanban' ? 'Kanban Board' : 'Gantt Chart'}
+            </DialogTitle>
+          </DialogHeader>
+          {selectedView.type === 'kanban' && selectedView.projectId && (
+            <KanbanBoard projectId={selectedView.projectId} />
+          )}
+          {selectedView.type === 'gantt' && selectedView.projectId && (
+            <GanttChart projectId={selectedView.projectId} />
+          )}
+        </DialogContent>
+      </Dialog>
 
       <div className="border rounded-lg">
         <Table>
@@ -264,8 +303,21 @@ export default function ProjectManagement() {
                     <Button
                       variant="ghost"
                       size="icon"
+                      onClick={() => setSelectedView({ type: 'kanban', projectId: project.id })}
+                    >
+                      <KanbanSquare className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setSelectedView({ type: 'gantt', projectId: project.id })}
+                    >
+                      <GanttChartSquare className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
                       onClick={() => {
-                        // Handle document download
                         toast({
                           title: "Download started",
                           description: "Project documentation is being downloaded",
