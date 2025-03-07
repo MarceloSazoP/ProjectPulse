@@ -84,7 +84,7 @@ export default function NavigationSidebar({
                     size="sm"
                     onClick={() => {
                       setSelectedProject(null);
-                      onViewChange(null);
+                      onViewChange("users");
                     }}
                   >
                     <Users className="mr-2 h-4 w-4" />
