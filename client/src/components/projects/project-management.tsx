@@ -69,6 +69,14 @@ export default function ProjectManagement() {
     }
   });
 
+  const { data: departments = [] } = useQuery({
+    queryKey: ["/api/departments"],
+    queryFn: async () => {
+      const response = await apiRequest("GET", "/api/departments");
+      return response.json();
+    }
+  });
+
   const form = useForm<InsertProject>({
     resolver: zodResolver(insertProjectSchema),
     defaultValues: {
@@ -79,6 +87,7 @@ export default function ProjectManagement() {
       status: "planning",
       budget: 0,
       managerId: null,
+      departmentId: null,
     },
   });
 
@@ -180,6 +189,7 @@ export default function ProjectManagement() {
       ...project,
       startDate: new Date(project.startDate).toISOString().substring(0, 10),
       endDate: new Date(project.endDate).toISOString().substring(0, 10),
+      departmentId: project.departmentId || null,
     });
     setIsDialogOpen(true);
   };
@@ -194,6 +204,7 @@ export default function ProjectManagement() {
       status: "planning",
       budget: 0,
       managerId: null,
+      departmentId: null,
     });
     setUploadedFiles([]);
     setIsDialogOpen(true);
@@ -273,6 +284,7 @@ export default function ProjectManagement() {
               <TableHead>Nombre</TableHead>
               <TableHead>Descripción</TableHead>
               <TableHead>Estado</TableHead>
+              <TableHead>Departamento</TableHead>
               <TableHead>Fecha Inicio</TableHead>
               <TableHead>Fecha Fin</TableHead>
               <TableHead>Documentación</TableHead>
@@ -282,7 +294,7 @@ export default function ProjectManagement() {
           <TableBody>
             {paginatedProjects.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center h-24">
+                <TableCell colSpan={8} className="text-center h-24">
                   No hay proyectos disponibles
                 </TableCell>
               </TableRow>
@@ -292,6 +304,11 @@ export default function ProjectManagement() {
                   <TableCell className="font-medium">{project.name}</TableCell>
                   <TableCell>{project.description}</TableCell>
                   <TableCell>{getStatusBadge(project.status)}</TableCell>
+                  <TableCell>
+                    {project.departmentId 
+                      ? departments.find(d => d.id === project.departmentId)?.name || 'Departamento no encontrado'
+                      : 'Sin departamento'}
+                  </TableCell>
                   <TableCell>
                     {new Date(project.startDate).toLocaleDateString()}
                   </TableCell>
@@ -511,6 +528,35 @@ export default function ProjectManagement() {
                         {users.map((user) => (
                           <SelectItem key={user.id} value={user.id.toString()}>
                             {user.username}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="departmentId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Departamento</FormLabel>
+                    <Select
+                      onValueChange={(value) => field.onChange(value && value !== "null" ? parseInt(value) : null)}
+                      defaultValue={field.value?.toString() || "null"}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Seleccionar departamento" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="null">Ninguno</SelectItem>
+                        {departments.map((dept) => (
+                          <SelectItem key={dept.id} value={dept.id.toString()}>
+                            {dept.name}
                           </SelectItem>
                         ))}
                       </SelectContent>
