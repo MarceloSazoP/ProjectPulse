@@ -20,7 +20,8 @@ import {
   KanbanSquare,
   GanttChartSquare,
   Building2,
-  UserCircle
+  UserCircle,
+  Layout
 } from "lucide-react";
 
 interface NavigationSidebarProps {
@@ -169,7 +170,7 @@ function Sidebar({ projects, onViewChange }: NavigationSidebarProps) {
   );
 }
 import { cn } from "@/lib/utils";
-import { useRouter } from "@tanstack/react-router";
+// import { useRouter } from "@tanstack/react-router"; //Removed
 import React from "react";
 import {
   HomeIcon,
@@ -191,7 +192,7 @@ import {
 export default function NavigationSidebar({ projects, onViewChange }: NavigationSidebarProps) {
   const { selectedProject, setSelectedProject } = useProjectStore();
   const { user, logout } = useAuth();
-  const navigate = useRouter();
+  // const navigate = useRouter(); //Removed
 
   const handleProjectSelect = (project: Project | null) => {
     setSelectedProject(project);
@@ -220,7 +221,8 @@ export default function NavigationSidebar({ projects, onViewChange }: Navigation
                 <DropdownMenuItem 
                   onClick={() => {
                     logout();
-                    navigate.navigate({ to: "/" });
+                    // navigate.navigate({ to: "/" }); //Removed
+                    window.location.href = "/"; //Added for redirection
                   }}
                 >
                   <LogOut className="mr-2 h-4 w-4" />
