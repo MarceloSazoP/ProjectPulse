@@ -39,6 +39,14 @@ export default function DepartmentManagement() {
     },
   });
 
+  const form = useForm({
+    resolver: zodResolver(departmentSchema),
+    defaultValues: {
+      name: "",
+      description: "",
+    },
+  });
+
   const createMutation = useMutation({
     mutationFn: async (data: z.infer<typeof departmentSchema>) => {
       const response = await axios.post("/api/departments", data);
@@ -46,7 +54,10 @@ export default function DepartmentManagement() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["departments"] });
-      form.reset({ name: "", description: "" });
+      form.reset({
+        name: "",
+        description: "",
+      });
       toast({
         title: "Departamento creado",
         description: "El departamento se ha creado correctamente",
@@ -55,20 +66,17 @@ export default function DepartmentManagement() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: async ({
-      id,
-      data,
-    }: {
-      id: number;
-      data: z.infer<typeof departmentSchema>;
-    }) => {
+    mutationFn: async ({ id, data }: { id: number; data: z.infer<typeof departmentSchema> }) => {
       const response = await axios.put(`/api/departments/${id}`, data);
       return response.data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["departments"] });
       setEditingId(null);
-      form.reset({ name: "", description: "" });
+      form.reset({
+        name: "",
+        description: "",
+      });
       toast({
         title: "Departamento actualizado",
         description: "El departamento se ha actualizado correctamente",
@@ -89,16 +97,8 @@ export default function DepartmentManagement() {
     },
   });
 
-  const form = useForm<z.infer<typeof departmentSchema>>({
-    resolver: zodResolver(departmentSchema),
-    defaultValues: {
-      name: "",
-      description: "",
-    },
-  });
-
-  const onSubmit = (data: z.infer<typeof departmentSchema>) => {
-    if (editingId) {
+  const handleSubmit = (data: z.infer<typeof departmentSchema>) => {
+    if (editingId !== null) {
       updateMutation.mutate({ id: editingId, data });
     } else {
       createMutation.mutate(data);
@@ -113,28 +113,29 @@ export default function DepartmentManagement() {
     });
   };
 
-  const handleCancelEdit = () => {
-    setEditingId(null);
-    form.reset({ name: "", description: "" });
-  };
-
   const handleDelete = (id: number) => {
-    if (confirm("¿Estás seguro de que deseas eliminar este departamento?")) {
+    if (window.confirm("¿Estás seguro de eliminar este departamento?")) {
       deleteMutation.mutate(id);
     }
   };
 
+  const handleCancel = () => {
+    setEditingId(null);
+    form.reset({
+      name: "",
+      description: "",
+    });
+  };
+
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>
-            {editingId ? "Editar Departamento" : "Crear Departamento"}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
+    <Card>
+      <CardHeader>
+        <CardTitle>Gestión de Departamentos</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-4">
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
               <FormField
                 control={form.control}
                 name="name"
@@ -161,83 +162,76 @@ export default function DepartmentManagement() {
                   </FormItem>
                 )}
               />
-              <div className="flex space-x-2">
-                <Button
-                  type="submit"
-                  disabled={
-                    createMutation.isPending || updateMutation.isPending
-                  }
-                >
-                  {(createMutation.isPending || updateMutation.isPending) && (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              <div className="flex gap-2">
+                <Button type="submit" disabled={createMutation.isPending || updateMutation.isPending}>
+                  {createMutation.isPending || updateMutation.isPending ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : editingId ? (
+                    "Actualizar"
+                  ) : (
+                    "Crear"
                   )}
-                  {editingId ? "Actualizar" : "Crear"}
                 </Button>
                 {editingId && (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={handleCancelEdit}
-                  >
+                  <Button type="button" variant="outline" onClick={handleCancel}>
                     Cancelar
                   </Button>
                 )}
               </div>
             </form>
           </Form>
-        </CardContent>
-      </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Departamentos</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {isLoading ? (
-            <div className="flex justify-center">
-              <Loader2 className="h-6 w-6 animate-spin" />
+          <div className="rounded-md border">
+            <div className="p-4">
+              <div className="grid grid-cols-3 gap-4 font-medium">
+                <div>Nombre</div>
+                <div>Descripción</div>
+                <div>Acciones</div>
+              </div>
             </div>
-          ) : departments.length === 0 ? (
-            <p className="text-center text-muted-foreground">
-              No hay departamentos
-            </p>
-          ) : (
-            <div className="space-y-4">
-              {departments.map((department: any) => (
-                <div
-                  key={department.id}
-                  className="flex items-center justify-between p-4 border rounded-md"
-                >
-                  <div>
-                    <h3 className="font-medium">{department.name}</h3>
-                    {department.description && (
-                      <p className="text-sm text-muted-foreground">
-                        {department.description}
-                      </p>
-                    )}
-                  </div>
-                  <div className="flex space-x-2">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => handleEdit(department)}
-                    >
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => handleDelete(department.id)}
-                    >
-                      <Trash className="h-4 w-4" />
-                    </Button>
-                  </div>
+            <div className="divide-y">
+              {isLoading ? (
+                <div className="p-4 text-center">
+                  <Loader2 className="mx-auto h-6 w-6 animate-spin" />
                 </div>
-              ))}
+              ) : departments.length === 0 ? (
+                <div className="p-4 text-center">No hay departamentos registrados</div>
+              ) : (
+                departments.map((dept: any) => (
+                  <div key={dept.id} className="grid grid-cols-3 gap-4 p-4">
+                    <div>{dept.name}</div>
+                    <div>{dept.description || "—"}</div>
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleEdit(dept)}
+                        disabled={editingId === dept.id}
+                      >
+                        <Pencil className="h-4 w-4" />
+                        <span className="sr-only">Edit</span>
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={() => handleDelete(dept.id)}
+                        disabled={deleteMutation.isPending}
+                      >
+                        {deleteMutation.isPending ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Trash className="h-4 w-4" />
+                        )}
+                        <span className="sr-only">Delete</span>
+                      </Button>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
-          )}
-        </CardContent>
-      </Card>
-    </div>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
   );
 }

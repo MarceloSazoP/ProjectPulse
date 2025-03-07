@@ -73,6 +73,17 @@ export default function UserManagement() {
     },
   });
 
+  const form = useForm({
+    resolver: zodResolver(userSchema),
+    defaultValues: {
+      username: "",
+      password: "",
+      role: "member",
+      departmentId: null,
+      profileId: null,
+    },
+  });
+
   const createMutation = useMutation({
     mutationFn: async (data: z.infer<typeof userSchema>) => {
       const response = await axios.post("/api/users", data);
@@ -129,20 +140,11 @@ export default function UserManagement() {
     },
   });
 
-  const form = useForm<z.infer<typeof userSchema>>({
-    resolver: zodResolver(userSchema),
-    defaultValues: {
-      username: "",
-      password: "",
-      role: "member",
-      departmentId: null,
-      profileId: null,
-    },
-  });
-
-  const onSubmit = (data: z.infer<typeof userSchema>) => {
-    if (editingId) {
-      const { password, ...updateData } = data;
+  const handleSubmit = (data: z.infer<typeof userSchema>) => {
+    if (editingId !== null) {
+      const { password, ...rest } = data;
+      // Solo enviar password si se ha modificado
+      const updateData = password ? data : rest;
       updateMutation.mutate({ id: editingId, data: updateData });
     } else {
       createMutation.mutate(data);
@@ -153,14 +155,20 @@ export default function UserManagement() {
     setEditingId(user.id);
     form.reset({
       username: user.username,
-      password: "", // Password field is cleared for security
+      password: "", // No mostramos la contraseña actual
       role: user.role,
-      departmentId: user.departmentId,
-      profileId: user.profileId,
+      departmentId: user.departmentId || null,
+      profileId: user.profileId || null,
     });
   };
 
-  const handleCancelEdit = () => {
+  const handleDelete = (id: number) => {
+    if (window.confirm("¿Estás seguro de eliminar este usuario?")) {
+      deleteMutation.mutate(id);
+    }
+  };
+
+  const handleCancel = () => {
     setEditingId(null);
     form.reset({
       username: "",
@@ -171,33 +179,27 @@ export default function UserManagement() {
     });
   };
 
-  const handleDelete = (id: number) => {
-    if (confirm("¿Estás seguro de que deseas eliminar este usuario?")) {
-      deleteMutation.mutate(id);
-    }
+  const getDepartmentName = (departmentId: number | null) => {
+    if (!departmentId) return "No asignado";
+    const department = departments.find((d: any) => d.id === departmentId);
+    return department ? department.name : "No asignado";
   };
 
-  const getDepartmentName = (id: number | null) => {
-    if (!id) return "No asignado";
-    const department = departments.find((d: any) => d.id === id);
-    return department ? department.name : "Desconocido";
-  };
-
-  const getProfileName = (id: number | null) => {
-    if (!id) return "No asignado";
-    const profile = profiles.find((p: any) => p.id === id);
-    return profile ? profile.name : "Desconocido";
+  const getProfileName = (profileId: number | null) => {
+    if (!profileId) return "No asignado";
+    const profile = profiles.find((p: any) => p.id === profileId);
+    return profile ? profile.name : "No asignado";
   };
 
   return (
-    <Card className="w-full">
+    <Card>
       <CardHeader>
         <CardTitle>Gestión de Usuarios</CardTitle>
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
               <FormField
                 control={form.control}
                 name="username"
@@ -205,45 +207,35 @@ export default function UserManagement() {
                   <FormItem>
                     <FormLabel>Nombre de usuario</FormLabel>
                     <FormControl>
-                      <Input placeholder="Ingrese nombre de usuario" {...field} />
+                      <Input {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-              {!editingId && (
-                <FormField
-                  control={form.control}
-                  name="password"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Contraseña</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="password"
-                          placeholder="Ingrese contraseña"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              )}
+              <FormField
+                control={form.control}
+                name="password"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{editingId ? "Nueva contraseña (opcional)" : "Contraseña"}</FormLabel>
+                    <FormControl>
+                      <Input type="password" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
               <FormField
                 control={form.control}
                 name="role"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Rol</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
-                      value={field.value}
-                    >
+                    <Select value={field.value} onValueChange={field.onChange}>
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Selecciona un rol" />
+                          <SelectValue placeholder="Seleccionar rol" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
@@ -258,23 +250,24 @@ export default function UserManagement() {
                   </FormItem>
                 )}
               />
+
               <FormField
                 control={form.control}
                 name="departmentId"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Departamento</FormLabel>
-                    <Select
-                      onValueChange={(value) => field.onChange(value ? Number(value) : null)}
-                      value={field.value?.toString() || ""}
+                    <Select 
+                      value={field.value?.toString() || ""} 
+                      onValueChange={(value) => field.onChange(value ? parseInt(value) : null)}
                     >
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Selecciona un departamento" />
+                          <SelectValue placeholder="Seleccionar departamento" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="">Sin departamento</SelectItem>
+                        <SelectItem value="">No asignado</SelectItem>
                         {departments.map((dept: any) => (
                           <SelectItem key={dept.id} value={dept.id.toString()}>
                             {dept.name}
@@ -286,28 +279,26 @@ export default function UserManagement() {
                   </FormItem>
                 )}
               />
+
               <FormField
                 control={form.control}
                 name="profileId"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Perfil</FormLabel>
-                    <Select
-                      onValueChange={(value) => field.onChange(value ? Number(value) : null)}
-                      value={field.value?.toString() || ""}
+                    <Select 
+                      value={field.value?.toString() || ""} 
+                      onValueChange={(value) => field.onChange(value ? parseInt(value) : null)}
                     >
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Selecciona un perfil" />
+                          <SelectValue placeholder="Seleccionar perfil" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="">Sin perfil</SelectItem>
+                        <SelectItem value="">No asignado</SelectItem>
                         {profiles.map((profile: any) => (
-                          <SelectItem
-                            key={profile.id}
-                            value={profile.id.toString()}
-                          >
+                          <SelectItem key={profile.id} value={profile.id.toString()}>
                             {profile.name}
                           </SelectItem>
                         ))}
@@ -317,19 +308,19 @@ export default function UserManagement() {
                   </FormItem>
                 )}
               />
+
               <div className="flex gap-2">
                 <Button type="submit" disabled={createMutation.isPending || updateMutation.isPending}>
                   {createMutation.isPending || updateMutation.isPending ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      {editingId ? "Actualizando..." : "Creando..."}
-                    </>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : editingId ? (
+                    "Actualizar"
                   ) : (
-                    <>{editingId ? "Actualizar Usuario" : "Crear Usuario"}</>
+                    "Crear"
                   )}
                 </Button>
                 {editingId && (
-                  <Button type="button" variant="outline" onClick={handleCancelEdit}>
+                  <Button type="button" variant="outline" onClick={handleCancel}>
                     Cancelar
                   </Button>
                 )}
