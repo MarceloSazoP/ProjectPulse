@@ -19,8 +19,8 @@ import {
   ChevronDown,
   KanbanSquare,
   GanttChartSquare,
-  Building2, // Added
-  UserCircle // Added
+  Building2,
+  UserCircle
 } from "lucide-react";
 
 interface NavigationSidebarProps {
