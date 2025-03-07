@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -337,7 +336,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
-export default function ProfileManagement() {
+export default function UserProfileManagement() {
   const { toast } = useToast();
   const [editingProfile, setEditingProfile] = useState<Profile | null>(null);
   const [profileToDelete, setProfileToDelete] = useState<Profile | null>(null);

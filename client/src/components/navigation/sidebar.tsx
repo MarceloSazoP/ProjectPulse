@@ -28,7 +28,7 @@ interface NavigationSidebarProps {
   onViewChange: (view: 'kanban' | 'gantt' | 'projects' | 'departments' | 'profiles' | null) => void; // Added 'departments' and 'profiles'
 }
 
-export default function Sidebar({ projects, onViewChange }: NavigationSidebarProps) {
+function Sidebar({ projects, onViewChange }: NavigationSidebarProps) {
   const { user, logoutMutation, setView } = useAuth(); // Added setView
   const { selectedProject, setSelectedProject } = useProjectStore();
 
