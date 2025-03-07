@@ -108,6 +108,15 @@ export default function NavigationSidebar({
                     <UserCircle className="mr-2 h-4 w-4" />
                     Perfiles
                   </Button>
+                  <Button
+                    variant="ghost"
+                    className="w-full justify-start"
+                    size="sm"
+                    onClick={() => onViewChange("projects")}
+                  >
+                    <KanbanSquare className="mr-2 h-4 w-4" />
+                    Proyectos
+                  </Button>
                 </>
               )}
             </div>
