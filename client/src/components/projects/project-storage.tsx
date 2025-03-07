@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,13 +25,13 @@ export default function ProjectStorage({
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       const fileList = Array.from(e.target.files);
-      
+
       // Filter for only .zip and .rar files
       const validFiles = fileList.filter(file => {
         const extension = file.name.toLowerCase().split('.').pop();
         return extension === 'zip' || extension === 'rar';
       });
-      
+
       if (validFiles.length !== fileList.length) {
         toast({
           title: "Archivos no válidos",
@@ -40,14 +39,14 @@ export default function ProjectStorage({
           variant: "destructive",
         });
       }
-      
+
       if (validFiles.length > 0) {
         setFiles(prev => [...prev, ...validFiles]);
         if (onFilesChange) {
           onFilesChange([...files, ...validFiles]);
         }
       }
-      
+
       // Reset the input to allow selecting the same file again
       e.target.value = '';
     }
@@ -63,7 +62,7 @@ export default function ProjectStorage({
 
   const removeUploadedFile = async (filename: string) => {
     if (!projectId) return;
-    
+
     try {
       await apiRequest("DELETE", `/api/projects/${projectId}/files/${filename}`);
       setUploadedFiles(prev => prev.filter(f => f !== filename));
@@ -82,29 +81,29 @@ export default function ProjectStorage({
 
   const uploadFiles = async () => {
     if (!projectId || files.length === 0) return;
-    
+
     setIsUploading(true);
     const formData = new FormData();
-    
+
     files.forEach(file => {
       formData.append('files', file);
     });
-    
+
     try {
       const response = await fetch(`/api/projects/${projectId}/files`, {
         method: 'POST',
         body: formData,
         credentials: 'include',
       });
-      
+
       if (!response.ok) {
         throw new Error('Error uploading files');
       }
-      
+
       const result = await response.json();
       setUploadedFiles(prev => [...prev, ...result.filenames]);
       setFiles([]);
-      
+
       toast({
         title: "Archivos subidos",
         description: "Los archivos han sido subidos exitosamente",
@@ -146,7 +145,7 @@ export default function ProjectStorage({
           </Button>
         </div>
       </div>
-      
+
       {files.length > 0 && (
         <div className="border rounded-md p-2">
           <p className="text-sm font-medium mb-2">Archivos para subir:</p>
@@ -170,7 +169,7 @@ export default function ProjectStorage({
           </ul>
         </div>
       )}
-      
+
       {uploadedFiles.length > 0 && (
         <div className="border rounded-md p-2">
           <p className="text-sm font-medium mb-2">Archivos subidos:</p>

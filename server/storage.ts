@@ -156,7 +156,11 @@ export class MemStorage implements IStorage {
   async addProjectFiles(projectId: number, filenames: string[]): Promise<void> {
     const project = await this.getProject(projectId);
     if (!project) throw new Error("Project not found");
-    project.files = [...(project.files || []), ...filenames];
+    // Replace existing files with new files - only one file per project
+    // First, delete any existing files physically if needed
+    // (This would need to be implemented if required)
+
+    project.files = filenames;
     this.projects.set(projectId, project);
   }
 

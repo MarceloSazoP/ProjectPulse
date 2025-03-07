@@ -5,6 +5,12 @@ import { storage } from "./storage";
 import { insertProjectSchema, insertTaskSchema, insertTeamSchema, insertDepartmentSchema, insertProfileSchema, insertUserSchema } from "@shared/schema";
 import path from "path";
 import fs from "fs";
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+
+// Get __dirname equivalent in ES module
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Setup authentication routes
@@ -83,6 +89,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         // Get the correct paths using __dirname
         const uploadDir = path.join(__dirname, '../uploads');
+        
+        // Create uploads directory if it doesn't exist
+        if (!fs.existsSync(uploadDir)) {
+          fs.mkdirSync(uploadDir, { recursive: true });
+        }
         
         // Rename the file
         fs.renameSync(

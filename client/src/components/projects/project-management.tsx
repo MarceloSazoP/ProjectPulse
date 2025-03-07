@@ -515,7 +515,7 @@ export default function ProjectManagement() {
               <div className="pt-4 border-t">
                 <h3 className="text-sm font-medium mb-2">Archivos del proyecto</h3>
                 <p className="text-xs text-muted-foreground mb-2">
-                  Solo se aceptan archivos comprimidos (.zip o .rar)
+                  Solo se acepta un archivo comprimido (.zip o .rar) por proyecto
                 </p>
                 {editingProject ? (
                   <ProjectStorage 
@@ -535,7 +535,7 @@ export default function ProjectManagement() {
                             const extension = file.name.toLowerCase().split('.').pop();
                             return extension === 'zip' || extension === 'rar';
                           });
-                          
+
                           if (files.length > 0) {
                             setUploadedFiles(files);
                           } else {
@@ -545,7 +545,7 @@ export default function ProjectManagement() {
                               variant: "destructive",
                             });
                           }
-                          
+
                           // Reset input
                           e.target.value = '';
                         }
