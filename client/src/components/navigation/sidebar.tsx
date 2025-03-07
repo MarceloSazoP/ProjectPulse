@@ -9,25 +9,27 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { 
-  LayoutDashboard, 
-  Users, 
-  FolderKanban, 
+import {
+  LayoutDashboard,
+  Users,
+  FolderKanban,
   BarChart2,
   Settings,
   LogOut,
   ChevronDown,
   KanbanSquare,
-  GanttChartSquare
+  GanttChartSquare,
+  Building2, // Added
+  UserCircle // Added
 } from "lucide-react";
 
 interface SidebarProps {
   projects: Project[];
-  onViewChange: (view: 'kanban' | 'gantt' | 'projects' | null) => void;
+  onViewChange: (view: 'kanban' | 'gantt' | 'projects' | 'departments' | 'profiles' | null) => void; // Added 'departments' and 'profiles'
 }
 
 export default function Sidebar({ projects, onViewChange }: SidebarProps) {
-  const { user, logoutMutation } = useAuth();
+  const { user, logoutMutation, setView } = useAuth(); // Added setView
   const { selectedProject, setSelectedProject } = useProjectStore();
 
   return (
@@ -50,18 +52,38 @@ export default function Sidebar({ projects, onViewChange }: SidebarProps) {
                 Dashboard
               </Button>
               {user?.role === 'admin' && (
-                <Button
-                  variant="ghost"
-                  className="w-full justify-start"
-                  size="sm"
-                  onClick={() => {
-                    setSelectedProject(null);
-                    onViewChange(null);
-                  }}
-                >
-                  <Users className="mr-2 h-4 w-4" />
-                  Users
-                </Button>
+                <>
+                  <Button
+                    variant="ghost"
+                    className="w-full justify-start"
+                    size="sm"
+                    onClick={() => {
+                      setSelectedProject(null);
+                      onViewChange(null);
+                    }}
+                  >
+                    <Users className="mr-2 h-4 w-4" />
+                    Usuarios
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    className="w-full justify-start"
+                    size="sm"
+                    onClick={() => onViewChange('departments')} //Simplified
+                  >
+                    <Building2 className="mr-2 h-4 w-4" />
+                    Departamentos
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    className="w-full justify-start"
+                    size="sm"
+                    onClick={() => onViewChange('profiles')} //Simplified
+                  >
+                    <UserCircle className="mr-2 h-4 w-4" />
+                    Perfiles
+                  </Button>
+                </>
               )}
               <Button
                 variant="ghost"

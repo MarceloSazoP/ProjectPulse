@@ -1,4 +1,4 @@
-import { User, Project, Task, Team, InsertUser, InsertProject, InsertTask, InsertTeam } from "@shared/schema";
+import { User, Project, Task, Team, Department, Profile, InsertUser, InsertProject, InsertTask, InsertTeam, InsertDepartment, InsertProfile } from "@shared/schema";
 import session from "express-session";
 import createMemoryStore from "memorystore";
 
@@ -11,7 +11,10 @@ export interface IStorage {
   // User operations
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
+  getUsers(): Promise<User[]>;
   createUser(user: InsertUser): Promise<User>;
+  updateUser(id: number, user: Partial<User>): Promise<User>;
+  deleteUser(id: number): Promise<void>;
   
   // Project operations
   getProjects(): Promise<Project[]>;
@@ -33,6 +36,20 @@ export interface IStorage {
   createTeam(team: InsertTeam): Promise<Team>;
   updateTeam(id: number, team: Partial<Team>): Promise<Team>;
   deleteTeam(id: number): Promise<void>;
+  
+  // Department operations
+  getDepartments(): Promise<Department[]>;
+  getDepartment(id: number): Promise<Department | undefined>;
+  createDepartment(department: InsertDepartment): Promise<Department>;
+  updateDepartment(id: number, department: Partial<Department>): Promise<Department>;
+  deleteDepartment(id: number): Promise<void>;
+  
+  // Profile operations
+  getProfiles(): Promise<Profile[]>;
+  getProfile(id: number): Promise<Profile | undefined>;
+  createProfile(profile: InsertProfile): Promise<Profile>;
+  updateProfile(id: number, profile: Partial<Profile>): Promise<Profile>;
+  deleteProfile(id: number): Promise<void>;
 }
 
 export class MemStorage implements IStorage {
@@ -40,6 +57,8 @@ export class MemStorage implements IStorage {
   private projects: Map<number, Project>;
   private tasks: Map<number, Task>;
   private teams: Map<number, Team>;
+  private departments: Map<number, Department>;
+  private profiles: Map<number, Profile>;
   sessionStore: session.Store;
   currentId: { [key: string]: number };
 
@@ -48,7 +67,9 @@ export class MemStorage implements IStorage {
     this.projects = new Map();
     this.tasks = new Map();
     this.teams = new Map();
-    this.currentId = { users: 1, projects: 1, tasks: 1, teams: 1 };
+    this.departments = new Map();
+    this.profiles = new Map();
+    this.currentId = { users: 1, projects: 1, tasks: 1, teams: 1, departments: 1, profiles: 1 };
     this.sessionStore = new MemoryStore({
       checkPeriod: 86400000, // 24h
     });
@@ -64,16 +85,34 @@ export class MemStorage implements IStorage {
       (user) => user.username === username,
     );
   }
+  
+  async getUsers(): Promise<User[]> {
+    return Array.from(this.users.values());
+  }
 
   async createUser(insertUser: InsertUser): Promise<User> {
     const id = this.currentId.users++;
     const user: User = { 
       ...insertUser, 
       id,
-      role: insertUser.role || 'member' 
+      role: insertUser.role || 'member',
+      departmentId: insertUser.departmentId || null,
+      profileId: insertUser.profileId || null
     };
     this.users.set(id, user);
     return user;
+  }
+  
+  async updateUser(id: number, userData: Partial<User>): Promise<User> {
+    const existing = await this.getUser(id);
+    if (!existing) throw new Error("User not found");
+    const updated = { ...existing, ...userData };
+    this.users.set(id, updated);
+    return updated;
+  }
+  
+  async deleteUser(id: number): Promise<void> {
+    this.users.delete(id);
   }
 
   // Project operations
@@ -177,6 +216,71 @@ export class MemStorage implements IStorage {
 
   async deleteTeam(id: number): Promise<void> {
     this.teams.delete(id);
+  }
+  
+  // Department operations
+  async getDepartments(): Promise<Department[]> {
+    return Array.from(this.departments.values());
+  }
+
+  async getDepartment(id: number): Promise<Department | undefined> {
+    return this.departments.get(id);
+  }
+
+  async createDepartment(department: InsertDepartment): Promise<Department> {
+    const id = this.currentId.departments++;
+    const newDepartment: Department = {
+      ...department,
+      id,
+      description: department.description || null
+    };
+    this.departments.set(id, newDepartment);
+    return newDepartment;
+  }
+
+  async updateDepartment(id: number, department: Partial<Department>): Promise<Department> {
+    const existing = await this.getDepartment(id);
+    if (!existing) throw new Error("Department not found");
+    const updated = { ...existing, ...department };
+    this.departments.set(id, updated);
+    return updated;
+  }
+
+  async deleteDepartment(id: number): Promise<void> {
+    this.departments.delete(id);
+  }
+  
+  // Profile operations
+  async getProfiles(): Promise<Profile[]> {
+    return Array.from(this.profiles.values());
+  }
+
+  async getProfile(id: number): Promise<Profile | undefined> {
+    return this.profiles.get(id);
+  }
+
+  async createProfile(profile: InsertProfile): Promise<Profile> {
+    const id = this.currentId.profiles++;
+    const newProfile: Profile = {
+      ...profile,
+      id,
+      description: profile.description || null,
+      permissions: profile.permissions || []
+    };
+    this.profiles.set(id, newProfile);
+    return newProfile;
+  }
+
+  async updateProfile(id: number, profile: Partial<Profile>): Promise<Profile> {
+    const existing = await this.getProfile(id);
+    if (!existing) throw new Error("Profile not found");
+    const updated = { ...existing, ...profile };
+    this.profiles.set(id, updated);
+    return updated;
+  }
+
+  async deleteProfile(id: number): Promise<void> {
+    this.profiles.delete(id);
   }
 }
 

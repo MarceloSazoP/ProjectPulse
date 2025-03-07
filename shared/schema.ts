@@ -5,12 +5,29 @@ import { z } from "zod";
 export const userRoles = ['admin', 'manager', 'member', 'client'] as const;
 export type UserRole = typeof userRoles[number];
 
+// Departamentos table
+export const departments = pgTable("departments", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull().unique(),
+  description: text("description"),
+});
+
+// Perfiles table
+export const profiles = pgTable("profiles", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull().unique(),
+  description: text("description"),
+  permissions: text("permissions").array(),
+});
+
 // Users table
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   username: text("username").notNull().unique(),
   password: text("password").notNull(),
   role: text("role", { enum: userRoles }).notNull().default('member'),
+  departmentId: integer("department_id").references(() => departments.id),
+  profileId: integer("profile_id").references(() => profiles.id),
 });
 
 // Projects table
@@ -63,13 +80,20 @@ export const insertTaskSchema = createInsertSchema(tasks, {
 export const insertUserSchema = createInsertSchema(users);
 export const insertTeamSchema = createInsertSchema(teams);
 
+export const insertDepartmentSchema = createInsertSchema(departments);
+export const insertProfileSchema = createInsertSchema(profiles);
+
 // Types
 export type User = typeof users.$inferSelect;
 export type Project = typeof projects.$inferSelect;
 export type Task = typeof tasks.$inferSelect;
 export type Team = typeof teams.$inferSelect;
+export type Department = typeof departments.$inferSelect;
+export type Profile = typeof profiles.$inferSelect;
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type InsertProject = z.infer<typeof insertProjectSchema>;
 export type InsertTask = z.infer<typeof insertTaskSchema>;
 export type InsertTeam = z.infer<typeof insertTeamSchema>;
+export type InsertDepartment = z.infer<typeof insertDepartmentSchema>;
+export type InsertProfile = z.infer<typeof insertProfileSchema>;

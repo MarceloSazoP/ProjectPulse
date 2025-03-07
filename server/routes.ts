@@ -2,7 +2,7 @@ import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { setupAuth } from "./auth";
 import { storage } from "./storage";
-import { insertProjectSchema, insertTaskSchema, insertTeamSchema } from "@shared/schema";
+import { insertProjectSchema, insertTaskSchema, insertTeamSchema, insertDepartmentSchema, insertProfileSchema, insertUserSchema } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Setup authentication routes
@@ -102,6 +102,96 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const { assigneeId } = req.body;
     const task = await storage.updateTask(taskId, { assigneeId });
     res.json(task);
+  });
+
+  // User routes
+  app.get("/api/users", requireAuth, async (req, res) => {
+    const users = await storage.getUsers();
+    res.json(users);
+  });
+
+  app.post("/api/users", requireAuth, async (req, res) => {
+    const userData = insertUserSchema.parse(req.body);
+    const user = await storage.createUser(userData);
+    res.status(201).json(user);
+  });
+
+  app.put("/api/users/:id", requireAuth, async (req, res) => {
+    const id = parseInt(req.params.id);
+    const user = await storage.updateUser(id, req.body);
+    res.json(user);
+  });
+
+  app.delete("/api/users/:id", requireAuth, async (req, res) => {
+    const id = parseInt(req.params.id);
+    await storage.deleteUser(id);
+    res.sendStatus(204);
+  });
+
+  // Department routes
+  app.get("/api/departments", requireAuth, async (req, res) => {
+    const departments = await storage.getDepartments();
+    res.json(departments);
+  });
+
+  app.get("/api/departments/:id", requireAuth, async (req, res) => {
+    const id = parseInt(req.params.id);
+    const department = await storage.getDepartment(id);
+    if (!department) {
+      return res.status(404).json({ message: "Department not found" });
+    }
+    res.json(department);
+  });
+
+  app.post("/api/departments", requireAuth, async (req, res) => {
+    const departmentData = insertDepartmentSchema.parse(req.body);
+    const department = await storage.createDepartment(departmentData);
+    res.status(201).json(department);
+  });
+
+  app.put("/api/departments/:id", requireAuth, async (req, res) => {
+    const id = parseInt(req.params.id);
+    const department = await storage.updateDepartment(id, req.body);
+    res.json(department);
+  });
+
+  app.delete("/api/departments/:id", requireAuth, async (req, res) => {
+    const id = parseInt(req.params.id);
+    await storage.deleteDepartment(id);
+    res.sendStatus(204);
+  });
+
+  // Profile routes
+  app.get("/api/profiles", requireAuth, async (req, res) => {
+    const profiles = await storage.getProfiles();
+    res.json(profiles);
+  });
+
+  app.get("/api/profiles/:id", requireAuth, async (req, res) => {
+    const id = parseInt(req.params.id);
+    const profile = await storage.getProfile(id);
+    if (!profile) {
+      return res.status(404).json({ message: "Profile not found" });
+    }
+    res.json(profile);
+  });
+
+  app.post("/api/profiles", requireAuth, async (req, res) => {
+    const profileData = insertProfileSchema.parse(req.body);
+    const profile = await storage.createProfile(profileData);
+    res.status(201).json(profile);
+  });
+
+  app.put("/api/profiles/:id", requireAuth, async (req, res) => {
+    const id = parseInt(req.params.id);
+    const profile = await storage.updateProfile(id, req.body);
+    res.json(profile);
+  });
+
+  app.delete("/api/profiles/:id", requireAuth, async (req, res) => {
+    const id = parseInt(req.params.id);
+    await storage.deleteProfile(id);
+    res.sendStatus(204);
   });
 
   const httpServer = createServer(app);
