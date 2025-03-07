@@ -371,7 +371,7 @@ export default function UserManagement() {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="">Ninguno</SelectItem>
+                        <SelectItem value="0">Ninguno</SelectItem>
                         {departments.map((dept) => (
                           <SelectItem key={dept.id} value={dept.id.toString()}>
                             {dept.name}
