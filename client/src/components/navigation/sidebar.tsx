@@ -23,12 +23,12 @@ import {
   UserCircle // Added
 } from "lucide-react";
 
-interface SidebarProps {
+interface NavigationSidebarProps {
   projects: Project[];
   onViewChange: (view: 'kanban' | 'gantt' | 'projects' | 'departments' | 'profiles' | null) => void; // Added 'departments' and 'profiles'
 }
 
-export default function Sidebar({ projects, onViewChange }: SidebarProps) {
+export default function Sidebar({ projects, onViewChange }: NavigationSidebarProps) {
   const { user, logoutMutation, setView } = useAuth(); // Added setView
   const { selectedProject, setSelectedProject } = useProjectStore();
 
@@ -194,12 +194,12 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-type SidebarProps = {
+type NavigationSidebarProps = {
   projects: Project[];
   onViewChange: (view: 'kanban' | 'gantt' | 'projects' | 'users' | 'departments' | 'profiles' | null) => void;
 };
 
-export default function Sidebar({ projects, onViewChange }: SidebarProps) {
+export default function Sidebar({ projects, onViewChange }: NavigationSidebarProps) {
   const { selectedProject, setSelectedProject } = useProjectStore();
   const { user, logout } = useAuth();
   const navigate = useRouter();
