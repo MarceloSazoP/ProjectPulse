@@ -189,7 +189,7 @@ export default function ProfileManagement() {
                     <FormLabel>Permisos</FormLabel>
                     <FormControl>
                       <CheckboxGroup
-                        value={field.value}
+                        value={field.value || []}lue}
                         onValueChange={field.onChange}
                         className="grid grid-cols-2 gap-2 mt-2"
                       >
