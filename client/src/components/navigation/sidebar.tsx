@@ -1,15 +1,10 @@
 import React from "react";
-import { cn } from "@/lib/utils";
 // import { useRouter } from "@tanstack/react-router"; //Removed
 import {
   HomeIcon,
   Layout,
-  LayoutPanelLeft,
-  ClipboardList,
-  UsersRound,
   LogOut,
   Settings,
-  ChevronRight,
   UserCircle,
   KanbanSquare,
   GanttChartSquare,
@@ -22,7 +17,7 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Project } from "@shared/schema";
 import { useProjectStore } from "@/store/projects";
-import { useAuth } from "@/components/providers/auth-provider";
+import { useAuth } from "@/hooks/use-auth";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -48,9 +43,12 @@ const views = [
   },
 ];
 
-export default function NavigationSidebar({ projects, onViewChange }: NavigationSidebarProps) {
+export default function NavigationSidebar({
+  projects,
+  onViewChange,
+}: NavigationSidebarProps) {
   const { selectedProject, setSelectedProject } = useProjectStore();
-  const { user, logout } = useAuth();
+  const { user, logoutMutation } = useAuth();
   // const navigate = useRouter(); //Removed
 
   const handleProjectSelect = (project: Project | null) => {
@@ -78,7 +76,7 @@ export default function NavigationSidebar({ projects, onViewChange }: Navigation
                 <LayoutDashboard className="mr-2 h-4 w-4" />
                 Dashboard
               </Button>
-              {user?.role === 'admin' && (
+              {user?.role === "admin" && (
                 <>
                   <Button
                     variant="ghost"
@@ -96,10 +94,19 @@ export default function NavigationSidebar({ projects, onViewChange }: Navigation
                     variant="ghost"
                     className="w-full justify-start"
                     size="sm"
-                    onClick={() => onViewChange('departments')} //Simplified
+                    onClick={() => onViewChange("departments")} //Simplified
                   >
                     <Building2 className="mr-2 h-4 w-4" />
                     Departamentos
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    className="w-full justify-start"
+                    size="sm"
+                    onClick={() => onViewChange("profiles")} //Simplified
+                  >
+                    <UserCircle className="mr-2 h-4 w-4" />
+                    Perfiles
                   </Button>
                 </>
               )}
@@ -159,25 +166,30 @@ export default function NavigationSidebar({ projects, onViewChange }: Navigation
               <div className="flex items-center justify-start gap-2 p-2">
                 <div className="flex flex-col space-y-0.5 leading-none">
                   <p className="text-sm font-medium">{user?.username}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {user?.role}
-                  </p>
+                  <p className="text-xs text-muted-foreground">{user?.role}</p>
                 </div>
               </div>
               <DropdownMenuItem>
                 <Settings className="mr-2 h-4 w-4" />
-                Settings
-              </DropdownMenuItem>
-                <DropdownMenuItem 
-                  onClick={() => {
-                    logout();
-                    // navigate.navigate({ to: "/" }); //Removed
-                    window.location.href = "/"; //Added for redirection
-                  }}
+                <Button
+                  variant="ghost"
+                  className="w-full justify-start"
+                  size="sm"
+                  onClick={() => onViewChange("profiles")} //Simplified
                 >
-                  <LogOut className="mr-2 h-4 w-4" />
-                  Logout
-                </DropdownMenuItem>
+                  Settings
+                </Button>
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => {
+                  logoutMutation.mutate();
+                  // navigate.navigate({ to: "/" }); //Removed
+                  window.location.href = "/"; //Added for redirection
+                }}
+              >
+                <LogOut className="mr-2 h-4 w-4" />
+                Logout
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
