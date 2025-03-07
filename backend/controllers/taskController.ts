@@ -1,146 +1,185 @@
 
 import { Request, Response } from 'express';
 import * as taskService from '../services/taskService';
+import { ganttTaskSchema, ganttTaskDependencySchema } from '../schemas/taskSchema';
+import * as logService from '../services/logService';
 
-// Obtener todas las tareas
-export async function getAllTasks(req: Request, res: Response) {
-  try {
-    const tasks = await taskService.getAllTasks();
-    res.json(tasks);
-  } catch (error) {
-    console.error('Error al obtener tareas:', error);
-    res.status(500).json({ error: 'Error al obtener tareas' });
-  }
-}
-
-// Obtener tareas por proyecto
-export async function getTasksByProject(req: Request, res: Response) {
+// Tareas Gantt
+export const getGanttTasks = async (req: Request, res: Response) => {
   try {
     const projectId = parseInt(req.params.projectId);
-    const tasks = await taskService.getTasksByProject(projectId);
-    res.json(tasks);
+    const result = await taskService.getGanttTasks(projectId);
+    
+    if (result.success) {
+      res.json(result.data);
+    } else {
+      res.status(500).json({ error: result.error });
+    }
   } catch (error) {
-    console.error('Error al obtener tareas del proyecto:', error);
-    res.status(500).json({ error: 'Error al obtener tareas del proyecto' });
+    console.error('Error in getGanttTasks controller:', error);
+    res.status(500).json({ error: 'Error interno del servidor' });
   }
-}
+};
 
-// Obtener una tarea por ID
-export async function getTaskById(req: Request, res: Response) {
+export const getGanttTaskById = async (req: Request, res: Response) => {
   try {
     const id = parseInt(req.params.id);
-    const task = await taskService.getTaskById(id);
+    const result = await taskService.getGanttTaskById(id);
     
-    if (!task) {
-      return res.status(404).json({ error: 'Tarea no encontrada' });
+    if (result.success) {
+      res.json(result.data);
+    } else {
+      res.status(404).json({ error: result.error });
     }
-    
-    res.json(task);
   } catch (error) {
-    console.error('Error al obtener tarea:', error);
-    res.status(500).json({ error: 'Error al obtener tarea' });
+    console.error('Error in getGanttTaskById controller:', error);
+    res.status(500).json({ error: 'Error interno del servidor' });
   }
-}
+};
 
-// Crear una nueva tarea
-export async function createTask(req: Request, res: Response) {
+export const createGanttTask = async (req: Request, res: Response) => {
   try {
-    const { name, description, status, priority, due_date, project_id, assignee_id } = req.body;
+    const taskData = ganttTaskSchema.parse(req.body);
+    const result = await taskService.createGanttTask(taskData);
     
-    // Validaciones básicas
-    if (!name) {
-      return res.status(400).json({ error: 'El nombre de la tarea es obligatorio' });
+    if (result.success) {
+      // Registrar la acción en logs
+      await logService.createLog({
+        user_id: req.user?.id,
+        action: 'create_gantt_task',
+        description: `Tarea Gantt creada: ${taskData.name}`,
+        ip_address: req.ip
+      });
+      
+      res.status(201).json(result.data);
+    } else {
+      res.status(400).json({ error: result.error });
     }
-    if (!project_id) {
-      return res.status(400).json({ error: 'El ID del proyecto es obligatorio' });
-    }
-    if (!status) {
-      return res.status(400).json({ error: 'El estado de la tarea es obligatorio' });
-    }
-    if (!priority) {
-      return res.status(400).json({ error: 'La prioridad de la tarea es obligatoria' });
-    }
-    
-    const newTask = await taskService.createTask({
-      name,
-      description,
-      status,
-      priority,
-      due_date: due_date ? new Date(due_date) : undefined,
-      project_id,
-      assignee_id
-    });
-    
-    res.status(201).json(newTask);
   } catch (error) {
-    console.error('Error al crear tarea:', error);
-    res.status(500).json({ error: 'Error al crear tarea' });
+    console.error('Error in createGanttTask controller:', error);
+    if (error.errors) {
+      res.status(400).json({ error: error.errors });
+    } else {
+      res.status(500).json({ error: 'Error interno del servidor' });
+    }
   }
-}
+};
 
-// Actualizar una tarea existente
-export async function updateTask(req: Request, res: Response) {
+export const updateGanttTask = async (req: Request, res: Response) => {
   try {
     const id = parseInt(req.params.id);
-    const { name, description, status, priority, due_date, project_id, assignee_id } = req.body;
+    const taskData = req.body;
     
-    const updatedTask = await taskService.updateTask(id, {
-      name,
-      description,
-      status,
-      priority,
-      due_date: due_date ? new Date(due_date) : undefined,
-      project_id,
-      assignee_id
-    });
+    const result = await taskService.updateGanttTask(id, taskData);
     
-    if (!updatedTask) {
-      return res.status(404).json({ error: 'Tarea no encontrada' });
+    if (result.success) {
+      // Registrar la acción en logs
+      await logService.createLog({
+        user_id: req.user?.id,
+        action: 'update_gantt_task',
+        description: `Tarea Gantt actualizada: ID ${id}`,
+        ip_address: req.ip
+      });
+      
+      res.json(result.data);
+    } else {
+      res.status(400).json({ error: result.error });
     }
-    
-    res.json(updatedTask);
   } catch (error) {
-    console.error('Error al actualizar tarea:', error);
-    res.status(500).json({ error: 'Error al actualizar tarea' });
+    console.error('Error in updateGanttTask controller:', error);
+    res.status(500).json({ error: 'Error interno del servidor' });
   }
-}
+};
 
-// Eliminar una tarea
-export async function deleteTask(req: Request, res: Response) {
+export const deleteGanttTask = async (req: Request, res: Response) => {
   try {
     const id = parseInt(req.params.id);
-    const success = await taskService.deleteTask(id);
+    const result = await taskService.deleteGanttTask(id);
     
-    if (!success) {
-      return res.status(404).json({ error: 'Tarea no encontrada' });
+    if (result.success) {
+      // Registrar la acción en logs
+      await logService.createLog({
+        user_id: req.user?.id,
+        action: 'delete_gantt_task',
+        description: `Tarea Gantt eliminada: ID ${id}`,
+        ip_address: req.ip
+      });
+      
+      res.status(204).send();
+    } else {
+      res.status(400).json({ error: result.error });
     }
-    
-    res.status(204).send();
   } catch (error) {
-    console.error('Error al eliminar tarea:', error);
-    res.status(500).json({ error: 'Error al eliminar tarea' });
+    console.error('Error in deleteGanttTask controller:', error);
+    res.status(500).json({ error: 'Error interno del servidor' });
   }
-}
+};
 
-// Asignar tarea a un usuario
-export async function assignTaskToUser(req: Request, res: Response) {
+// Dependencias entre tareas
+export const getTaskDependencies = async (req: Request, res: Response) => {
   try {
     const taskId = parseInt(req.params.taskId);
-    const { userId } = req.body;
+    const result = await taskService.getTaskDependencies(taskId);
     
-    if (!userId) {
-      return res.status(400).json({ error: 'El ID del usuario es obligatorio' });
+    if (result.success) {
+      res.json(result.data);
+    } else {
+      res.status(500).json({ error: result.error });
     }
-    
-    const updatedTask = await taskService.assignTaskToUser(taskId, userId);
-    
-    if (!updatedTask) {
-      return res.status(404).json({ error: 'Tarea no encontrada' });
-    }
-    
-    res.json(updatedTask);
   } catch (error) {
-    console.error('Error al asignar tarea a usuario:', error);
-    res.status(500).json({ error: 'Error al asignar tarea a usuario' });
+    console.error('Error in getTaskDependencies controller:', error);
+    res.status(500).json({ error: 'Error interno del servidor' });
   }
-}
+};
+
+export const addTaskDependency = async (req: Request, res: Response) => {
+  try {
+    const dependencyData = ganttTaskDependencySchema.parse(req.body);
+    const result = await taskService.addTaskDependency(dependencyData);
+    
+    if (result.success) {
+      // Registrar la acción en logs
+      await logService.createLog({
+        user_id: req.user?.id,
+        action: 'add_task_dependency',
+        description: `Dependencia añadida: Tarea ${dependencyData.task_id} depende de ${dependencyData.depends_on_task_id}`,
+        ip_address: req.ip
+      });
+      
+      res.status(201).json(result.data);
+    } else {
+      res.status(400).json({ error: result.error });
+    }
+  } catch (error) {
+    console.error('Error in addTaskDependency controller:', error);
+    if (error.errors) {
+      res.status(400).json({ error: error.errors });
+    } else {
+      res.status(500).json({ error: 'Error interno del servidor' });
+    }
+  }
+};
+
+export const removeTaskDependency = async (req: Request, res: Response) => {
+  try {
+    const id = parseInt(req.params.id);
+    const result = await taskService.removeTaskDependency(id);
+    
+    if (result.success) {
+      // Registrar la acción en logs
+      await logService.createLog({
+        user_id: req.user?.id,
+        action: 'remove_task_dependency',
+        description: `Dependencia eliminada: ID ${id}`,
+        ip_address: req.ip
+      });
+      
+      res.status(204).send();
+    } else {
+      res.status(400).json({ error: result.error });
+    }
+  } catch (error) {
+    console.error('Error in removeTaskDependency controller:', error);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+};
