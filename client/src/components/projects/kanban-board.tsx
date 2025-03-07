@@ -1,5 +1,5 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Task, InsertTask } from "@shared/schema";
+import { Task, InsertTask, insertTaskSchema } from "@shared/schema";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   Dialog,
@@ -28,13 +28,12 @@ import {
 } from "@/components/ui/select";
 import { useProjectStore } from "@/store/projects";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Loader2, Plus, Calendar } from "lucide-react";
+import { Loader2, Plus, Calendar, Edit2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { format } from "date-fns";
 import { useState } from "react";
-
 
 interface KanbanBoardProps {
   projectId: number;
@@ -62,11 +61,6 @@ const PRIORITY_COLORS = {
   medium: "bg-yellow-100 text-yellow-700",
   high: "bg-red-100 text-red-700"
 };
-
-// Assuming insertTaskSchema is defined elsewhere and imported
-//  This is a placeholder, replace with your actual schema
-const insertTaskSchema = {} as any;
-
 
 export default function KanbanBoard({ projectId }: KanbanBoardProps) {
   const { toast } = useToast();
@@ -111,14 +105,17 @@ export default function KanbanBoard({ projectId }: KanbanBoardProps) {
   });
 
   const updateTaskMutation = useMutation({
-    mutationFn: async ({ taskId, status }: { taskId: number; status: string }) => {
-      const res = await apiRequest("PUT", `/api/tasks/${taskId}/status`, {
-        status,
-      });
+    mutationFn: async ({ taskId, data }: { taskId: number; data: Partial<Task> }) => {
+      const res = await apiRequest("PUT", `/api/tasks/${taskId}`, data);
       return res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/projects", projectId, "tasks"] });
+      toast({
+        title: "Task updated",
+        description: "Task has been updated successfully",
+      });
+      setEditingTask(null);
     },
     onError: (error: Error) => {
       toast({
@@ -141,8 +138,23 @@ export default function KanbanBoard({ projectId }: KanbanBoardProps) {
 
   const handleDrop = (status: string, task: Task) => {
     if (task.status !== status) {
-      updateTaskMutation.mutate({ taskId: task.id, status });
+      updateTaskMutation.mutate({ 
+        taskId: task.id, 
+        data: { status } 
+      });
     }
+  };
+
+  const startEdit = (task: Task) => {
+    setEditingTask(task);
+    form.reset({
+      name: task.name,
+      description: task.description || "",
+      status: task.status,
+      priority: task.priority,
+      dueDate: task.dueDate ? new Date(task.dueDate).toISOString().split('T')[0] : undefined,
+      projectId: task.projectId,
+    });
   };
 
   if (isLoading) {
@@ -182,7 +194,11 @@ export default function KanbanBoard({ projectId }: KanbanBoardProps) {
             </DialogHeader>
             <Form {...form}>
               <form
-                onSubmit={form.handleSubmit((data) => createTaskMutation.mutate(data))}
+                onSubmit={form.handleSubmit((data) => 
+                  editingTask 
+                    ? updateTaskMutation.mutate({ taskId: editingTask.id, data })
+                    : createTaskMutation.mutate(data)
+                )}
                 className="space-y-4"
               >
                 <FormField
@@ -207,6 +223,33 @@ export default function KanbanBoard({ projectId }: KanbanBoardProps) {
                       <FormControl>
                         <Input {...field} value={field.value || ''} />
                       </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="status"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Status</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select status" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {TASK_STATUS.map((status) => (
+                            <SelectItem key={status} value={status}>
+                              {STATUS_LABELS[status]}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -246,7 +289,7 @@ export default function KanbanBoard({ projectId }: KanbanBoardProps) {
                         <Input
                           type="date"
                           {...field}
-                          value={field.value ? new Date(field.value).toISOString().split('T')[0] : ''}
+                          value={field.value || ''}
                         />
                       </FormControl>
                       <FormMessage />
@@ -256,9 +299,9 @@ export default function KanbanBoard({ projectId }: KanbanBoardProps) {
                 <Button
                   type="submit"
                   className="w-full"
-                  disabled={createTaskMutation.isPending}
+                  disabled={createTaskMutation.isPending || updateTaskMutation.isPending}
                 >
-                  {createTaskMutation.isPending && (
+                  {(createTaskMutation.isPending || updateTaskMutation.isPending) && (
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   )}
                   {editingTask ? "Update Task" : "Create Task"}
@@ -308,8 +351,18 @@ export default function KanbanBoard({ projectId }: KanbanBoardProps) {
                           </div>
                         )}
                       </div>
-                      <div className={`px-2 py-1 rounded text-xs font-medium ${PRIORITY_COLORS[task.priority]}`}>
-                        {task.priority}
+                      <div className="flex items-center gap-2">
+                        <div className={`px-2 py-1 rounded text-xs font-medium ${PRIORITY_COLORS[task.priority]}`}>
+                          {task.priority}
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6"
+                          onClick={() => startEdit(task)}
+                        >
+                          <Edit2 className="h-3 w-3" />
+                        </Button>
                       </div>
                     </div>
                     {task.dueDate && (

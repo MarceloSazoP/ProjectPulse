@@ -56,8 +56,11 @@ export const insertProjectSchema = createInsertSchema(projects, {
   endDate: z.coerce.date().transform(date => date.toISOString()),
 });
 
+export const insertTaskSchema = createInsertSchema(tasks, {
+  dueDate: z.coerce.date().transform(date => date.toISOString()).optional(),
+});
+
 export const insertUserSchema = createInsertSchema(users);
-export const insertTaskSchema = createInsertSchema(tasks);
 export const insertTeamSchema = createInsertSchema(teams);
 
 // Types
