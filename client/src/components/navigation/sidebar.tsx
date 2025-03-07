@@ -20,8 +20,7 @@ import {
   KanbanSquare,
   GanttChartSquare,
   Building2,
-  UserCircle,
-  Layout
+  UserCircle
 } from "lucide-react";
 
 interface NavigationSidebarProps {
@@ -174,6 +173,8 @@ import { cn } from "@/lib/utils";
 import React from "react";
 import {
   HomeIcon,
+  Layout,
+</old_str>
   LayoutPanelLeft,
   ClipboardList,
   UsersRound,
