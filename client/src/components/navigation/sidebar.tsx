@@ -177,7 +177,6 @@ import {
   ClipboardList,
   UsersRound,
   Layout,
-  ChevronDown,
   LogOut,
   Settings,
 } from "lucide-react";
