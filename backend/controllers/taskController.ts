@@ -1,30 +1,27 @@
 
 import { Request, Response } from 'express';
 import * as taskService from '../services/taskService';
-import { ganttTaskSchema, ganttTaskDependencySchema } from '../schemas/taskSchema';
+import { taskSchema } from '../schemas/taskSchema';
 import * as logService from '../services/logService';
 
-// Tareas Gantt
-export const getGanttTasks = async (req: Request, res: Response) => {
+export const getAllTasks = async (req: Request, res: Response) => {
   try {
-    const projectId = parseInt(req.params.projectId);
-    const result = await taskService.getGanttTasks(projectId);
-    
+    const result = await taskService.getAllTasks();
     if (result.success) {
       res.json(result.data);
     } else {
       res.status(500).json({ error: result.error });
     }
   } catch (error) {
-    console.error('Error in getGanttTasks controller:', error);
+    console.error('Error in getAllTasks controller:', error);
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 };
 
-export const getGanttTaskById = async (req: Request, res: Response) => {
+export const getTaskById = async (req: Request, res: Response) => {
   try {
     const id = parseInt(req.params.id);
-    const result = await taskService.getGanttTaskById(id);
+    const result = await taskService.getTaskById(id);
     
     if (result.success) {
       res.json(result.data);
@@ -32,23 +29,55 @@ export const getGanttTaskById = async (req: Request, res: Response) => {
       res.status(404).json({ error: result.error });
     }
   } catch (error) {
-    console.error('Error in getGanttTaskById controller:', error);
+    console.error('Error in getTaskById controller:', error);
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 };
 
-export const createGanttTask = async (req: Request, res: Response) => {
+export const getTasksByProject = async (req: Request, res: Response) => {
   try {
-    const taskData = ganttTaskSchema.parse(req.body);
-    const result = await taskService.createGanttTask(taskData);
+    const projectId = parseInt(req.params.projectId);
+    const result = await taskService.getTasksByProject(projectId);
     
     if (result.success) {
-      // Registrar la acción en logs
+      res.json(result.data);
+    } else {
+      res.status(404).json({ error: result.error });
+    }
+  } catch (error) {
+    console.error('Error in getTasksByProject controller:', error);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+};
+
+export const getTasksByUser = async (req: Request, res: Response) => {
+  try {
+    const userId = parseInt(req.params.userId);
+    const result = await taskService.getTasksByUser(userId);
+    
+    if (result.success) {
+      res.json(result.data);
+    } else {
+      res.status(404).json({ error: result.error });
+    }
+  } catch (error) {
+    console.error('Error in getTasksByUser controller:', error);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+};
+
+export const createTask = async (req: Request, res: Response) => {
+  try {
+    const taskData = taskSchema.parse(req.body);
+    const result = await taskService.createTask(taskData);
+    
+    if (result.success) {
       await logService.createLog({
-        user_id: req.user?.id,
-        action: 'create_gantt_task',
-        description: `Tarea Gantt creada: ${taskData.name}`,
-        ip_address: req.ip
+        action: 'create_task',
+        entity: 'tasks',
+        entity_id: result.data.id,
+        details: `Tarea creada: ${taskData.name}`,
+        user_id: req.user?.id
       });
       
       res.status(201).json(result.data);
@@ -56,7 +85,7 @@ export const createGanttTask = async (req: Request, res: Response) => {
       res.status(400).json({ error: result.error });
     }
   } catch (error) {
-    console.error('Error in createGanttTask controller:', error);
+    console.error('Error in createTask controller:', error);
     if (error.errors) {
       res.status(400).json({ error: error.errors });
     } else {
@@ -65,20 +94,20 @@ export const createGanttTask = async (req: Request, res: Response) => {
   }
 };
 
-export const updateGanttTask = async (req: Request, res: Response) => {
+export const updateTask = async (req: Request, res: Response) => {
   try {
     const id = parseInt(req.params.id);
     const taskData = req.body;
     
-    const result = await taskService.updateGanttTask(id, taskData);
+    const result = await taskService.updateTask(id, taskData);
     
     if (result.success) {
-      // Registrar la acción en logs
       await logService.createLog({
-        user_id: req.user?.id,
-        action: 'update_gantt_task',
-        description: `Tarea Gantt actualizada: ID ${id}`,
-        ip_address: req.ip
+        action: 'update_task',
+        entity: 'tasks',
+        entity_id: id,
+        details: `Tarea actualizada: ID ${id}`,
+        user_id: req.user?.id
       });
       
       res.json(result.data);
@@ -86,23 +115,23 @@ export const updateGanttTask = async (req: Request, res: Response) => {
       res.status(400).json({ error: result.error });
     }
   } catch (error) {
-    console.error('Error in updateGanttTask controller:', error);
+    console.error('Error in updateTask controller:', error);
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 };
 
-export const deleteGanttTask = async (req: Request, res: Response) => {
+export const deleteTask = async (req: Request, res: Response) => {
   try {
     const id = parseInt(req.params.id);
-    const result = await taskService.deleteGanttTask(id);
+    const result = await taskService.deleteTask(id);
     
     if (result.success) {
-      // Registrar la acción en logs
       await logService.createLog({
-        user_id: req.user?.id,
-        action: 'delete_gantt_task',
-        description: `Tarea Gantt eliminada: ID ${id}`,
-        ip_address: req.ip
+        action: 'delete_task',
+        entity: 'tasks',
+        entity_id: id,
+        details: `Tarea eliminada: ID ${id}`,
+        user_id: req.user?.id
       });
       
       res.status(204).send();
@@ -110,76 +139,58 @@ export const deleteGanttTask = async (req: Request, res: Response) => {
       res.status(400).json({ error: result.error });
     }
   } catch (error) {
-    console.error('Error in deleteGanttTask controller:', error);
+    console.error('Error in deleteTask controller:', error);
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 };
 
-// Dependencias entre tareas
-export const getTaskDependencies = async (req: Request, res: Response) => {
+export const assignTaskToUser = async (req: Request, res: Response) => {
   try {
     const taskId = parseInt(req.params.taskId);
-    const result = await taskService.getTaskDependencies(taskId);
+    const userId = parseInt(req.body.user_id);
+    
+    const result = await taskService.assignTaskToUser(taskId, userId);
     
     if (result.success) {
+      await logService.createLog({
+        action: 'assign_task',
+        entity: 'tasks',
+        entity_id: taskId,
+        details: `Tarea ID ${taskId} asignada al usuario ID ${userId}`,
+        user_id: req.user?.id
+      });
+      
       res.json(result.data);
     } else {
-      res.status(500).json({ error: result.error });
+      res.status(400).json({ error: result.error });
     }
   } catch (error) {
-    console.error('Error in getTaskDependencies controller:', error);
+    console.error('Error in assignTaskToUser controller:', error);
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 };
 
-export const addTaskDependency = async (req: Request, res: Response) => {
+export const unassignTask = async (req: Request, res: Response) => {
   try {
-    const dependencyData = ganttTaskDependencySchema.parse(req.body);
-    const result = await taskService.addTaskDependency(dependencyData);
+    const taskId = parseInt(req.params.taskId);
+    
+    const result = await taskService.unassignTask(taskId);
     
     if (result.success) {
-      // Registrar la acción en logs
       await logService.createLog({
-        user_id: req.user?.id,
-        action: 'add_task_dependency',
-        description: `Dependencia añadida: Tarea ${dependencyData.task_id} depende de ${dependencyData.depends_on_task_id}`,
-        ip_address: req.ip
+        action: 'unassign_task',
+        entity: 'tasks',
+        entity_id: taskId,
+        details: `Tarea ID ${taskId} desasignada`,
+        user_id: req.user?.id
       });
       
-      res.status(201).json(result.data);
+      res.json(result.data);
     } else {
       res.status(400).json({ error: result.error });
     }
   } catch (error) {
-    console.error('Error in addTaskDependency controller:', error);
-    if (error.errors) {
-      res.status(400).json({ error: error.errors });
-    } else {
-      res.status(500).json({ error: 'Error interno del servidor' });
-    }
-  }
-};
-
-export const removeTaskDependency = async (req: Request, res: Response) => {
-  try {
-    const id = parseInt(req.params.id);
-    const result = await taskService.removeTaskDependency(id);
-    
-    if (result.success) {
-      // Registrar la acción en logs
-      await logService.createLog({
-        user_id: req.user?.id,
-        action: 'remove_task_dependency',
-        description: `Dependencia eliminada: ID ${id}`,
-        ip_address: req.ip
-      });
-      
-      res.status(204).send();
-    } else {
-      res.status(400).json({ error: result.error });
-    }
-  } catch (error) {
-    console.error('Error in removeTaskDependency controller:', error);
+    console.error('Error in unassignTask controller:', error);
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 };
