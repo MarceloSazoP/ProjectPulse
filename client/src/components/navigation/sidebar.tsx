@@ -1,5 +1,5 @@
 import React from "react";
-// import { useRouter } from "@tanstack/react-router"; //Removed
+import { Link, useLocation } from "wouter";
 import {
   HomeIcon,
   Layout,
@@ -23,6 +23,105 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+
+export function Sidebar() {
+  const [location] = useLocation();
+  const { logout, user } = useAuth();
+
+  const isActive = (path: string) => {
+    return location === path;
+  };
+
+  return (
+    <div className="flex h-full w-60 flex-col border-r bg-sidebar">
+      <div className="flex items-center gap-2 p-4">
+        <UserCircle className="h-8 w-8" />
+        <div className="flex flex-col">
+          <span className="font-medium">{user?.name || "Usuario"}</span>
+          <span className="text-xs text-muted-foreground">{user?.email || "usuario@ejemplo.com"}</span>
+        </div>
+      </div>
+      
+      <ScrollArea className="flex-1 px-3">
+        <div className="space-y-1 py-2">
+          <Link href="/">
+            <Button 
+              variant={isActive("/") ? "secondary" : "ghost"} 
+              className="w-full justify-start"
+            >
+              <LayoutDashboard className="mr-2 h-4 w-4" />
+              Dashboard
+            </Button>
+          </Link>
+          
+          <Link href="/projects">
+            <Button 
+              variant={isActive("/projects") ? "secondary" : "ghost"} 
+              className="w-full justify-start"
+            >
+              <KanbanSquare className="mr-2 h-4 w-4" />
+              Proyectos
+            </Button>
+          </Link>
+          
+          <Link href="/tasks">
+            <Button 
+              variant={isActive("/tasks") ? "secondary" : "ghost"} 
+              className="w-full justify-start"
+            >
+              <GanttChartSquare className="mr-2 h-4 w-4" />
+              Tareas
+            </Button>
+          </Link>
+          
+          <Link href="/teams">
+            <Button 
+              variant={isActive("/teams") ? "secondary" : "ghost"} 
+              className="w-full justify-start"
+            >
+              <Users className="mr-2 h-4 w-4" />
+              Equipos
+            </Button>
+          </Link>
+          
+          <Link href="/organizations">
+            <Button 
+              variant={isActive("/organizations") ? "secondary" : "ghost"} 
+              className="w-full justify-start"
+            >
+              <Building2 className="mr-2 h-4 w-4" />
+              Organizaciones
+            </Button>
+          </Link>
+        </div>
+      </ScrollArea>
+      
+      <div className="border-t p-3">
+        <div className="space-y-1">
+          <Link href="/settings">
+            <Button 
+              variant="ghost" 
+              className="w-full justify-start"
+            >
+              <Settings className="mr-2 h-4 w-4" />
+              Configuración
+            </Button>
+          </Link>
+          
+          <Button 
+            variant="ghost" 
+            className="w-full justify-start text-destructive"
+            onClick={() => logout()}
+          >
+            <LogOut className="mr-2 h-4 w-4" />
+            Cerrar sesión
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 } from "@/components/ui/dropdown-menu";
 
 interface NavigationSidebarProps {
