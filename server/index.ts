@@ -4,6 +4,7 @@ import multer from "multer";
 import path from "path";
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
+import { createServer } from 'http';
 import router from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { seedAdminUser } from "./seed";
@@ -72,7 +73,7 @@ app.use((req, res, next) => {
   // Register API routes
   app.use('/api', router);
   
-  const server = app.listen();
+  const server = createServer(app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
