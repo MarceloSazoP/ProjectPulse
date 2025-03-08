@@ -92,11 +92,12 @@ app.use((req, res, next) => {
     serveStatic(app);
   }
 
-  // Importar la configuración
-  import { serverConfig } from './config';
+  // Usar la configuración importada
+  const { serverConfig } = await import('./config.js');
+  const PORT = serverConfig.port;
   
   server.listen({
-    port: serverConfig.port,
+    port: PORT,
     host: "0.0.0.0",
     reusePort: true,
   }, () => {
