@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
-import { apiRequest } from '../../lib/api-request';
+import { apiRequest } from '../../lib/queryClient';
 import { useToast } from '../../hooks/use-toast';
 import { format, addDays, differenceInDays, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
