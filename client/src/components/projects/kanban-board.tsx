@@ -10,7 +10,7 @@ import {
   DropdownMenuTrigger,
 } from '../ui/dropdown-menu';
 import { Input } from '../ui/input';
-import { apiRequest } from '../../lib/api-request';
+import { apiRequest } from '../../lib/queryClient';
 import { useToast } from '../../hooks/use-toast';
 
 // Definir interfaces para tipado
