@@ -9,7 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "../../hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
-import { apiRequest } from "@/lib/api";
+import { apiRequest } from "../../lib/queryClient";
 import { Department, Project } from "@shared/schema";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { zodResolver } from "@hookform/resolvers/zod";
