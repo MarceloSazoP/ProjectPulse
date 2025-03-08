@@ -22,9 +22,9 @@ dotenv.config();
  * 4. Para un entorno de producción real, considerar usar un proxy inverso (Nginx/Apache)
  */
 export const serverConfig = {
-  // Puerto del servidor - usa 5000 por defecto o el puerto definido en las variables de entorno
+  // Puerto del servidor - usa 3000 por defecto o el puerto definido en las variables de entorno
   // PRODUCCIÓN: Configurar PORT en el archivo .env o en las variables de entorno del servidor
-  port: process.env.PORT || 5000,
+  port: process.env.PORT || 3000,
   
   // Host - usar 0.0.0.0 para aceptar conexiones desde cualquier dirección IP
   // PRODUCCIÓN: Mantener 0.0.0.0 para aceptar conexiones externas

@@ -92,8 +92,8 @@ app.use((req, res, next) => {
     serveStatic(app);
   }
 
-  // Serve the app only on port 5000
-  const PORT = 5000;
+  // Usar el puerto desde la configuración
+  const PORT = process.env.PORT || 3000;
   
   server.listen({
     port: PORT,
