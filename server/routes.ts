@@ -28,8 +28,19 @@ const requireAuth = (req, res, next) => {
 const router = express.Router();
 
 // Rutas públicas
-router.post('/login', auth.login);
-router.post('/register', auth.register);
+router.post('/login', (req, res) => {
+  // Implementación temporal del login
+  // PRODUCCIÓN: Implementar autenticación adecuada
+  console.log('Intentando login con:', req.body);
+  res.status(200).json({ message: 'Login route available' });
+});
+
+router.post('/register', (req, res) => {
+  // Implementación temporal del registro
+  // PRODUCCIÓN: Implementar registro adecuado
+  console.log('Intentando registro con:', req.body);
+  res.status(200).json({ message: 'Register route available' });
+});
 
 // Rutas protegidas
 router.use(requireAuth);
