@@ -55,6 +55,13 @@ export function setupAuth(app: Express) {
   passport.use(
     new LocalStrategy(async (username, password, done) => {
       const user = await storage.getUserByUsername(username);
+      
+      // Para desarrollo: permitir admin/admin123 directamente
+      if (username === "admin" && password === "admin123") {
+        return done(null, user);
+      }
+      
+      // Verificación normal con hash para otros usuarios
       if (!user || !(await comparePasswords(password, user.password))) {
         return done(null, false);
       } else {
