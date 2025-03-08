@@ -34,7 +34,7 @@ import { z } from "zod";
 import { Plus, Calendar } from "lucide-react";
 import { format } from "date-fns";
 import { Skeleton } from "@/components/ui/skeleton";
-import { apiRequest } from "@/lib/api";
+import { apiRequest } from "../../lib/queryClient";
 
 // Define la estructura de una tarea
 interface Task {
