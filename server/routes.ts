@@ -2,7 +2,15 @@ import express from 'express';
 import { db } from './storage';
 import { InsertProject, InsertTask, insertProjectSchema, insertTaskSchema, projects, tasks, users } from '../shared/schema';
 import { and, eq } from 'drizzle-orm';
-import { auth, requireAuth } from './auth';
+import { setupAuth } from './auth';
+
+// Create auth helpers
+const requireAuth = (req, res, next) => {
+  if (!req.isAuthenticated()) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  next();
+};
 
 const router = express.Router();
 
