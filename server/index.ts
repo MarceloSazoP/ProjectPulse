@@ -92,11 +92,11 @@ app.use((req, res, next) => {
     serveStatic(app);
   }
 
-  // Usar el puerto desde la configuración
-  const PORT = process.env.PORT || 3000;
+  // Importar la configuración
+  import { serverConfig } from './config';
   
   server.listen({
-    port: PORT,
+    port: serverConfig.port,
     host: "0.0.0.0",
     reusePort: true,
   }, () => {
