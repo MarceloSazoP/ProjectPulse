@@ -1,3 +1,4 @@
+
 /**
  * Storage Service
  * 
@@ -64,7 +65,7 @@ let mockUsers: User[] = [
   {
     id: 1,
     username: 'admin',
-    password: 'admin123', // En producción, usar hash
+    password: '$2b$10$X7VfCOt6SJlcOMp1xUFpPOiyuM9iCXLpwBQeBPxXA/IEcLfGgPIXK', // admin123 hashed
     role: 'admin',
     departmentId: 1,
     profileId: 1
@@ -108,8 +109,14 @@ let mockTeams: Team[] = [
   }
 ];
 
+// Variable para simular el sessionStore
+const sessionStore = {};
+
 // Implementación para desarrollo
 export const storage = {
+  // Sesiones
+  sessionStore: sessionStore,
+
   // Proyectos
   getProjects: async (): Promise<Project[]> => {
     // PRODUCCIÓN: Descomentar para usar la conexión real a la base de datos
@@ -260,7 +267,7 @@ export const storage = {
     return mockUsers.find(u => u.username === username);
   },
 
-  createUser: async (userData: any): Promise<User> => {
+  createUser: async (userData: Partial<User>): Promise<User> => {
     // PRODUCCIÓN: Descomentar para usar la conexión real a la base de datos
     // const [newUser] = await db.insert(users).values(userData).returning();
     // return newUser;

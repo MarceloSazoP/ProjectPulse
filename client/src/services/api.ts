@@ -34,15 +34,11 @@ export const apiService = {
     // return response.json();
 
     // Simular una respuesta del servidor
-    return new Promise((resolve, reject) => {
-      setTimeout(() => {
-        if (username === 'admin' && password === 'admin123') {
-          resolve(mockUser);
-        } else {
-          reject(new Error('Credenciales incorrectas'));
-        }
-      }, 500);
-    });
+    if (username === 'admin' && password === 'admin123') {
+      return mockUser;
+    } else {
+      throw new Error('Credenciales incorrectas');
+    }
   },
 
   logout: async (): Promise<void> => {
@@ -54,6 +50,7 @@ export const apiService = {
     // if (!response.ok) throw new Error('Error al cerrar sesión');
 
     // En desarrollo, no hace nada
+    console.log('Usuario desconectado');
     return Promise.resolve();
   },
 
@@ -82,32 +79,32 @@ export const projectService = {
     const response = await api.get('/projects');
     return response.data;
   },
-  
+
   getById: async (id: number) => {
     const response = await api.get(`/projects/${id}`);
     return response.data;
   },
-  
+
   create: async (projectData: any) => {
     const response = await api.post('/projects', projectData);
     return response.data;
   },
-  
+
   update: async (id: number, projectData: any) => {
     const response = await api.put(`/projects/${id}`, projectData);
     return response.data;
   },
-  
+
   delete: async (id: number) => {
     const response = await api.delete(`/projects/${id}`);
     return response.data;
   },
-  
+
   getProjectTeams: async (projectId: number) => {
     const response = await api.get(`/projects/${projectId}/teams`);
     return response.data;
   },
-  
+
   assignTeam: async (projectId: number, teamId: number) => {
     const response = await api.post('/projects/team-assignment', { projectId, teamId });
     return response.data;
@@ -123,37 +120,37 @@ export const taskService = {
     const response = await api.get('/tasks');
     return response.data;
   },
-  
+
   getById: async (id: number) => {
     const response = await api.get(`/tasks/${id}`);
     return response.data;
   },
-  
+
   getByProject: async (projectId: number) => {
     const response = await api.get(`/projects/${projectId}/tasks`);
     return response.data;
   },
-  
+
   create: async (taskData: any) => {
     const response = await api.post('/tasks', taskData);
     return response.data;
   },
-  
+
   createForProject: async (projectId: number, taskData: any) => {
     const response = await api.post(`/projects/${projectId}/tasks`, taskData);
     return response.data;
   },
-  
+
   update: async (id: number, taskData: any) => {
     const response = await api.put(`/tasks/${id}`, taskData);
     return response.data;
   },
-  
+
   delete: async (id: number) => {
     const response = await api.delete(`/tasks/${id}`);
     return response.data;
   },
-  
+
   assignToUser: async (taskId: number, userId: number) => {
     const response = await api.post(`/tasks/${taskId}/assign`, { userId });
     return response.data;
@@ -170,37 +167,37 @@ export const teamService = {
     const response = await api.get('/teams');
     return response.data;
   },
-  
+
   getById: async (id: number) => {
     const response = await api.get(`/teams/${id}`);
     return response.data;
   },
-  
+
   create: async (teamData: any) => {
     const response = await api.post('/teams', teamData);
     return response.data;
   },
-  
+
   update: async (id: number, teamData: any) => {
     const response = await api.put(`/teams/${id}`, teamData);
     return response.data;
   },
-  
+
   delete: async (id: number) => {
     const response = await api.delete(`/teams/${id}`);
     return response.data;
   },
-  
+
   getMembers: async (teamId: number) => {
     const response = await api.get(`/teams/${teamId}/members`);
     return response.data;
   },
-  
+
   addMember: async (teamId: number, userId: number) => {
     const response = await api.post(`/teams/${teamId}/members`, { userId });
     return response.data;
   },
-  
+
   removeMember: async (teamId: number, userId: number) => {
     const response = await api.delete(`/teams/${teamId}/members/${userId}`);
     return response.data;
@@ -216,72 +213,72 @@ export const kanbanService = {
     const response = await api.get('/kanban/boards');
     return response.data;
   },
-  
+
   getBoardById: async (id: number) => {
     const response = await api.get(`/kanban/boards/${id}`);
     return response.data;
   },
-  
+
   getBoardsByProject: async (projectId: number) => {
     const response = await api.get(`/projects/${projectId}/kanban`);
     return response.data;
   },
-  
+
   createBoard: async (boardData: any) => {
     const response = await api.post('/kanban/boards', boardData);
     return response.data;
   },
-  
+
   updateBoard: async (id: number, boardData: any) => {
     const response = await api.put(`/kanban/boards/${id}`, boardData);
     return response.data;
   },
-  
+
   deleteBoard: async (id: number) => {
     const response = await api.delete(`/kanban/boards/${id}`);
     return response.data;
   },
-  
+
   getColumns: async (boardId: number) => {
     const response = await api.get(`/kanban/boards/${boardId}/columns`);
     return response.data;
   },
-  
+
   createColumn: async (columnData: any) => {
     const response = await api.post('/kanban/columns', columnData);
     return response.data;
   },
-  
+
   updateColumn: async (id: number, columnData: any) => {
     const response = await api.put(`/kanban/columns/${id}`, columnData);
     return response.data;
   },
-  
+
   deleteColumn: async (id: number) => {
     const response = await api.delete(`/kanban/columns/${id}`);
     return response.data;
   },
-  
+
   getCards: async (columnId: number) => {
     const response = await api.get(`/kanban/columns/${columnId}/cards`);
     return response.data;
   },
-  
+
   createCard: async (cardData: any) => {
     const response = await api.post('/kanban/cards', cardData);
     return response.data;
   },
-  
+
   updateCard: async (id: number, cardData: any) => {
     const response = await api.put(`/kanban/cards/${id}`, cardData);
     return response.data;
   },
-  
+
   deleteCard: async (id: number) => {
     const response = await api.delete(`/kanban/cards/${id}`);
     return response.data;
   },
-  
+
   assignCardToUser: async (cardId: number, userId: number) => {
     const response = await api.post(`/kanban/cards/${cardId}/assign`, { userId });
     return response.data;
@@ -297,37 +294,37 @@ export const ganttService = {
     const response = await api.get('/gantt/tasks');
     return response.data;
   },
-  
+
   getTasksByProject: async (projectId: number) => {
     const response = await api.get(`/projects/${projectId}/gantt`);
     return response.data;
   },
-  
+
   createTask: async (taskData: any) => {
     const response = await api.post('/gantt/tasks', taskData);
     return response.data;
   },
-  
+
   updateTask: async (id: number, taskData: any) => {
     const response = await api.put(`/gantt/tasks/${id}`, taskData);
     return response.data;
   },
-  
+
   deleteTask: async (id: number) => {
     const response = await api.delete(`/gantt/tasks/${id}`);
     return response.data;
   },
-  
+
   assignTaskToUser: async (taskId: number, userId: number) => {
     const response = await api.post(`/gantt/tasks/${taskId}/assign`, { userId });
     return response.data;
   },
-  
+
   addDependency: async (dependencyData: any) => {
     const response = await api.post('/gantt/tasks/dependencies', dependencyData);
     return response.data;
   },
-  
+
   removeDependency: async (id: number) => {
     const response = await api.delete(`/gantt/tasks/dependencies/${id}`);
     return response.data;
