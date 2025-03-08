@@ -1,28 +1,55 @@
-import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
-import { DragDropContext, Draggable, Droppable } from '@hello-pangea/dnd';
-import { Button } from '../ui/button';
-import { Plus, MoreHorizontal } from 'lucide-react';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '../ui/dropdown-menu';
-import { Input } from '../ui/input';
-import { apiRequest } from '../../lib/queryClient';
-import { useToast } from '../../hooks/use-toast';
 
-// Definir interfaces para tipado
+import { useState, useEffect } from "react";
+import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogHeader, 
+  DialogTitle, 
+  DialogFooter,
+  DialogTrigger
+} from "@/components/ui/dialog";
+import { 
+  Form, 
+  FormControl, 
+  FormField, 
+  FormItem, 
+  FormLabel, 
+  FormMessage 
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from "@/components/ui/select";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { Plus, Calendar } from "lucide-react";
+import { format } from "date-fns";
+import { Skeleton } from "@/components/ui/skeleton";
+import { apiRequest } from "@/lib/api";
+
+// Define la estructura de una tarea
 interface Task {
-  id: number;
+  id: string;
   title: string;
   description: string;
-  status: string;
-  priority: string;
+  status: 'backlog' | 'todo_today' | 'in_progress' | 'done';
   assigneeId?: number;
+  assigneeName?: string;
+  dueDate?: string;
+  priority: 'low' | 'medium' | 'high';
+  createdAt: string;
 }
 
+// Define la estructura de una columna
 interface Column {
   id: string;
   title: string;
@@ -34,54 +61,89 @@ interface KanbanData {
   columnOrder: string[];
 }
 
+// Esquema de validación para la creación de tareas
+const taskSchema = z.object({
+  title: z.string().min(1, "El título es requerido").max(100, "El título no puede exceder 100 caracteres"),
+  description: z.string().max(200, "La descripción no puede exceder 200 caracteres"),
+  status: z.enum(["backlog", "todo_today", "in_progress", "done"]),
+  assigneeId: z.number().optional(),
+  dueDate: z.string().optional(),
+  priority: z.enum(["low", "medium", "high"]),
+});
+
+type TaskFormValues = z.infer<typeof taskSchema>;
+
 export default function KanbanBoard({ projectId }: { projectId: number }) {
-  const { toast } = useToast();
+  const [loading, setLoading] = useState(true);
+  const [users, setUsers] = useState<any[]>([]);
   const [kanbanData, setKanbanData] = useState<KanbanData>({
     columns: {
-      'col-1': {
-        id: 'col-1',
-        title: 'Por hacer',
+      'backlog': {
+        id: 'backlog',
+        title: 'Backlog',
         tasks: [],
       },
-      'col-2': {
-        id: 'col-2',
-        title: 'En progreso',
+      'todo_today': {
+        id: 'todo_today',
+        title: 'To Do Today',
         tasks: [],
       },
-      'col-3': {
-        id: 'col-3',
-        title: 'Completado',
+      'in_progress': {
+        id: 'in_progress',
+        title: 'In Progress',
+        tasks: [],
+      },
+      'done': {
+        id: 'done',
+        title: 'Done',
         tasks: [],
       },
     },
-    columnOrder: ['col-1', 'col-2', 'col-3'],
+    columnOrder: ['backlog', 'todo_today', 'in_progress', 'done'],
   });
-  const [newTaskTitle, setNewTaskTitle] = useState('');
-  const [addingToColumn, setAddingToColumn] = useState<string | null>(null);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
 
+  // Configuración del formulario
+  const form = useForm<TaskFormValues>({
+    resolver: zodResolver(taskSchema),
+    defaultValues: {
+      title: "",
+      description: "",
+      status: "backlog",
+      priority: "medium",
+    },
+  });
+
+  // Cargar usuarios y tareas al iniciar
   useEffect(() => {
-    // Cargar tareas del proyecto
-    const fetchTasks = async () => {
+    const loadData = async () => {
       try {
-        const response = await apiRequest('GET', `/api/projects/${projectId}/tasks`);
-        const tasks = await response.json();
+        setLoading(true);
+        // Cargar usuarios
+        const usersResponse = await apiRequest('GET', '/api/users');
+        const usersData = await usersResponse.json();
+        setUsers(usersData);
 
-        // Organizar tareas en columnas según su estado
+        // Cargar tareas del proyecto
+        const tasksResponse = await apiRequest('GET', `/api/projects/${projectId}/tasks`);
+        const tasksData = await tasksResponse.json();
+
+        // Organizar tareas en columnas
         const updatedColumns = { ...kanbanData.columns };
-
-        // Resetear las tareas en todas las columnas
+        
+        // Limpiar tareas existentes
         Object.keys(updatedColumns).forEach(columnId => {
           updatedColumns[columnId].tasks = [];
         });
 
-        // Distribuir tareas en las columnas correspondientes
-        tasks.forEach((task: Task) => {
-          if (task.status === 'not_started') {
-            updatedColumns['col-1'].tasks.push(task);
-          } else if (task.status === 'in_progress') {
-            updatedColumns['col-2'].tasks.push(task);
-          } else if (task.status === 'completed') {
-            updatedColumns['col-3'].tasks.push(task);
+        // Distribuir tareas según su estado
+        tasksData.forEach((task: Task) => {
+          const column = task.status;
+          if (updatedColumns[column]) {
+            updatedColumns[column].tasks.push(task);
+          } else {
+            // Si el estado no coincide con ninguna columna, ponerlo en backlog
+            updatedColumns['backlog'].tasks.push(task);
           }
         });
 
@@ -90,20 +152,18 @@ export default function KanbanBoard({ projectId }: { projectId: number }) {
           columns: updatedColumns
         });
       } catch (error) {
-        console.error('Error al cargar tareas:', error);
-        toast({
-          title: 'Error',
-          description: 'No se pudieron cargar las tareas del proyecto',
-          variant: 'destructive',
-        });
+        console.error("Error al cargar datos:", error);
+      } finally {
+        setLoading(false);
       }
     };
 
     if (projectId) {
-      fetchTasks();
+      loadData();
     }
   }, [projectId]);
 
+  // Manejar el drag and drop
   const onDragEnd = async (result: any) => {
     const { destination, source, draggableId } = result;
 
@@ -114,21 +174,22 @@ export default function KanbanBoard({ projectId }: { projectId: number }) {
       return;
     }
 
-    // Encontrar la columna de origen y destino
+    // Obtener columnas de origen y destino
     const sourceColumn = kanbanData.columns[source.droppableId];
     const destColumn = kanbanData.columns[destination.droppableId];
-
+    
     // Encontrar la tarea que se está moviendo
-    const task = sourceColumn.tasks[source.index];
+    const task = sourceColumn.tasks.find(t => t.id === draggableId);
+    if (!task) return;
 
-    // Crear copias para actualizar el estado
+    // Crear nuevos arrays de tareas para las columnas
     const newSourceTasks = Array.from(sourceColumn.tasks);
     newSourceTasks.splice(source.index, 1);
-
+    
     const newDestTasks = Array.from(destColumn.tasks);
-    newDestTasks.splice(destination.index, 0, task);
+    newDestTasks.splice(destination.index, 0, {...task, status: destination.droppableId as any});
 
-    // Actualizar el estado local
+    // Actualizar el estado
     const newColumns = {
       ...kanbanData.columns,
       [sourceColumn.id]: {
@@ -146,125 +207,255 @@ export default function KanbanBoard({ projectId }: { projectId: number }) {
       columns: newColumns
     });
 
-    // Determinar el nuevo estado de la tarea según la columna de destino
-    let newStatus;
-    if (destination.droppableId === 'col-1') newStatus = 'not_started';
-    else if (destination.droppableId === 'col-2') newStatus = 'in_progress';
-    else if (destination.droppableId === 'col-3') newStatus = 'completed';
-
-    // Actualizar en la base de datos
+    // Enviar actualización al servidor
     try {
-      await apiRequest('PATCH', `/api/projects/${projectId}/tasks/${task.id}`, {
-        status: newStatus
+      await apiRequest('PUT', `/api/tasks/${task.id}`, {
+        status: destination.droppableId
       });
     } catch (error) {
-      console.error('Error al actualizar tarea:', error);
-      toast({
-        title: 'Error',
-        description: 'No se pudo actualizar el estado de la tarea',
-        variant: 'destructive',
+      console.error("Error al actualizar estado de la tarea:", error);
+      // Revertir cambios en caso de error
+      setKanbanData({
+        ...kanbanData
       });
     }
   };
 
-  const handleAddTask = async (columnId: string) => {
-    if (!newTaskTitle.trim()) return;
-
-    // Determinar el estado según la columna
-    let status;
-    if (columnId === 'col-1') status = 'not_started';
-    else if (columnId === 'col-2') status = 'in_progress';
-    else status = 'completed';
-
+  // Manejar la creación de tareas
+  const handleCreateTask = async (data: TaskFormValues) => {
     try {
       const response = await apiRequest('POST', `/api/projects/${projectId}/tasks`, {
-        title: newTaskTitle,
-        description: '',
-        status,
-        priority: 'medium'
+        ...data,
+        projectId
       });
 
       if (response.ok) {
         const newTask = await response.json();
-
-        // Actualizar el estado local
-        const column = kanbanData.columns[columnId];
-        const updatedColumn = {
-          ...column,
-          tasks: [...column.tasks, newTask]
-        };
-
+        
+        // Agregar la nueva tarea a la columna correspondiente
+        const updatedColumns = { ...kanbanData.columns };
+        updatedColumns[data.status].tasks.push(newTask);
+        
         setKanbanData({
           ...kanbanData,
-          columns: {
-            ...kanbanData.columns,
-            [columnId]: updatedColumn
-          }
+          columns: updatedColumns
         });
-
-        // Limpiar el campo de entrada
-        setNewTaskTitle('');
-        setAddingToColumn(null);
-
-        toast({
-          title: 'Tarea creada',
-          description: 'La tarea se ha creado correctamente',
-        });
+        
+        // Cerrar el diálogo y resetear el formulario
+        setIsDialogOpen(false);
+        form.reset();
       }
     } catch (error) {
-      console.error('Error al crear tarea:', error);
-      toast({
-        title: 'Error',
-        description: 'No se pudo crear la tarea',
-        variant: 'destructive',
-      });
+      console.error("Error al crear tarea:", error);
     }
   };
 
+  // Renderizar el tablero Kanban
+  if (loading) {
+    return (
+      <div className="space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          {[1, 2, 3, 4].map(i => (
+            <Card key={i}>
+              <CardHeader>
+                <Skeleton className="h-6 w-24" />
+              </CardHeader>
+              <CardContent className="space-y-2">
+                <Skeleton className="h-20 w-full" />
+                <Skeleton className="h-20 w-full" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="p-4">
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-2xl font-bold">Tablero Kanban</h2>
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <DialogTrigger asChild>
+            <Button>
+              <Plus className="mr-2 h-4 w-4" /> Nueva Tarea
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-[550px]">
+            <DialogHeader>
+              <DialogTitle>Crear Nueva Tarea</DialogTitle>
+            </DialogHeader>
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(handleCreateTask)} className="space-y-4">
+                <FormField
+                  control={form.control}
+                  name="title"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Título</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Título de la tarea" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="description"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Descripción</FormLabel>
+                      <FormControl>
+                        <Textarea 
+                          placeholder="Descripción de la tarea" 
+                          maxLength={200}
+                          {...field} 
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="status"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Estado</FormLabel>
+                        <Select 
+                          onValueChange={field.onChange} 
+                          defaultValue={field.value}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Selecciona un estado" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="backlog">Backlog</SelectItem>
+                            <SelectItem value="todo_today">To Do Today</SelectItem>
+                            <SelectItem value="in_progress">In Progress</SelectItem>
+                            <SelectItem value="done">Done</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={form.control}
+                    name="priority"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Prioridad</FormLabel>
+                        <Select 
+                          onValueChange={field.onChange} 
+                          defaultValue={field.value}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Selecciona prioridad" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="low">Baja</SelectItem>
+                            <SelectItem value="medium">Media</SelectItem>
+                            <SelectItem value="high">Alta</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="assigneeId"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Asignado a</FormLabel>
+                        <Select 
+                          onValueChange={(value) => field.onChange(parseInt(value))} 
+                          defaultValue={field.value?.toString()}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Selecciona usuario" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {users.map(user => (
+                              <SelectItem key={user.id} value={user.id.toString()}>
+                                {user.username}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={form.control}
+                    name="dueDate"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Fecha de vencimiento</FormLabel>
+                        <FormControl>
+                          <div className="relative">
+                            <Input 
+                              type="date" 
+                              {...field} 
+                              value={field.value || ''} 
+                            />
+                            <Calendar className="absolute right-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                          </div>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+                
+                <DialogFooter>
+                  <Button type="submit">Crear Tarea</Button>
+                </DialogFooter>
+              </form>
+            </Form>
+          </DialogContent>
+        </Dialog>
+      </div>
+      
       <DragDropContext onDragEnd={onDragEnd}>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           {kanbanData.columnOrder.map(columnId => {
             const column = kanbanData.columns[columnId];
-
             return (
-              <div key={columnId} className="bg-gray-50 rounded-lg p-4">
-                <div className="flex justify-between items-center mb-4">
-                  <h3 className="font-medium">{column.title}</h3>
-                  <Button 
-                    size="sm" 
-                    variant="ghost" 
-                    onClick={() => setAddingToColumn(columnId)}
-                  >
-                    <Plus className="h-4 w-4" />
-                  </Button>
-                </div>
-
-                {addingToColumn === columnId && (
-                  <div className="mb-4 flex space-x-2">
-                    <Input
-                      placeholder="Título de la tarea"
-                      value={newTaskTitle}
-                      onChange={(e) => setNewTaskTitle(e.target.value)}
-                    />
-                    <Button onClick={() => handleAddTask(columnId)}>
-                      Añadir
-                    </Button>
-                  </div>
-                )}
-
+              <Card key={columnId} className="min-h-96">
+                <CardHeader className="bg-muted/50 pb-3">
+                  <CardTitle className="text-md font-semibold">
+                    {column.title} ({column.tasks.length})
+                  </CardTitle>
+                </CardHeader>
                 <Droppable droppableId={columnId}>
                   {(provided) => (
-                    <div
-                      {...provided.droppableProps}
+                    <CardContent 
+                      className="p-2"
                       ref={provided.innerRef}
-                      className="min-h-[200px]"
+                      {...provided.droppableProps}
                     >
                       {column.tasks.map((task, index) => (
-                        <Draggable
-                          key={task.id}
-                          draggableId={`task-${task.id}`}
+                        <Draggable 
+                          key={task.id} 
+                          draggableId={task.id} 
                           index={index}
                         >
                           {(provided) => (
@@ -272,51 +463,44 @@ export default function KanbanBoard({ projectId }: { projectId: number }) {
                               ref={provided.innerRef}
                               {...provided.draggableProps}
                               {...provided.dragHandleProps}
-                              className="bg-white p-3 rounded-md mb-2 shadow-sm"
+                              className="mb-2"
                             >
-                              <div className="flex justify-between items-start">
-                                <h4 className="font-medium">{task.title}</h4>
-                                <DropdownMenu>
-                                  <DropdownMenuTrigger asChild>
-                                    <Button variant="ghost" size="sm">
-                                      <MoreHorizontal className="h-4 w-4" />
-                                    </Button>
-                                  </DropdownMenuTrigger>
-                                  <DropdownMenuContent align="end">
-                                    <DropdownMenuItem>Editar</DropdownMenuItem>
-                                    <DropdownMenuItem className="text-red-600">
-                                      Eliminar
-                                    </DropdownMenuItem>
-                                  </DropdownMenuContent>
-                                </DropdownMenu>
-                              </div>
-                              {task.description && (
-                                <p className="text-sm text-gray-600 mt-1">{task.description}</p>
-                              )}
-                              <div className="mt-2 flex justify-between items-center">
-                                <span className={`text-xs px-2 py-1 rounded-full ${
-                                  task.priority === 'high' ? 'bg-red-100 text-red-800' :
-                                  task.priority === 'medium' ? 'bg-yellow-100 text-yellow-800' :
-                                  'bg-blue-100 text-blue-800'
-                                }`}>
-                                  {task.priority === 'high' ? 'Alta' :
-                                   task.priority === 'medium' ? 'Media' : 'Baja'}
-                                </span>
-                                {task.assigneeId && (
-                                  <div className="w-6 h-6 rounded-full bg-primary text-white flex items-center justify-center text-xs">
-                                    A
+                              <Card className="hover:bg-muted/30 cursor-pointer">
+                                <CardContent className="p-3 space-y-2">
+                                  <div className="font-medium">{task.title}</div>
+                                  <div className="text-sm text-muted-foreground line-clamp-2">
+                                    {task.description}
                                   </div>
-                                )}
-                              </div>
+                                  <div className="flex justify-between items-center text-xs text-muted-foreground">
+                                    <div>
+                                      {task.assigneeName || "Sin asignar"}
+                                    </div>
+                                    <div className={`px-2 py-1 rounded-full ${
+                                      task.priority === 'high' ? 'bg-red-100 text-red-800' : 
+                                      task.priority === 'medium' ? 'bg-yellow-100 text-yellow-800' : 
+                                      'bg-green-100 text-green-800'
+                                    }`}>
+                                      {task.priority === 'high' ? 'Alta' : 
+                                       task.priority === 'medium' ? 'Media' : 'Baja'}
+                                    </div>
+                                  </div>
+                                  {task.dueDate && (
+                                    <div className="text-xs flex items-center">
+                                      <Calendar className="h-3 w-3 mr-1" /> 
+                                      {format(new Date(task.dueDate), 'dd/MM/yyyy')}
+                                    </div>
+                                  )}
+                                </CardContent>
+                              </Card>
                             </div>
                           )}
                         </Draggable>
                       ))}
                       {provided.placeholder}
-                    </div>
+                    </CardContent>
                   )}
                 </Droppable>
-              </div>
+              </Card>
             );
           })}
         </div>

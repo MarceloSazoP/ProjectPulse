@@ -47,13 +47,14 @@ export const projects = pgTable("projects", {
 // Tasks table
 export const tasks = pgTable("tasks", {
   id: serial("id").primaryKey(),
-  name: text("name").notNull(),
+  title: text("title").notNull(),
   description: text("description"),
-  status: text("status", { enum: ['backlog', 'todo', 'todo_today', 'in_progress', 'end'] }).notNull(),
+  status: text("status", { enum: ['backlog', 'todo_today', 'in_progress', 'done'] }).notNull(),
   priority: text("priority", { enum: ['low', 'medium', 'high'] }).notNull(),
   dueDate: timestamp("due_date"),
   projectId: integer("project_id").references(() => projects.id),
   assigneeId: integer("assignee_id").references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
 });
 
 // Teams table
@@ -86,7 +87,12 @@ export const insertProjectSchema = createInsertSchema(projects, {
 });
 
 export const insertTaskSchema = createInsertSchema(tasks, {
-  dueDate: z.coerce.date().transform(date => date.toISOString()).optional(),
+  dueDate: z.coerce.date().transform(date => {
+    if (date instanceof Date && !isNaN(date.getTime())) {
+      return date.toISOString();
+    }
+    return undefined;
+  }).optional(),
 });
 
 export const insertUserSchema = createInsertSchema(users);

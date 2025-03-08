@@ -2,6 +2,33 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Estilos para Kanban Board */
+.kanban-column {
+  min-height: 300px;
+}
+
+.task-card {
+  transition: background-color 0.2s, box-shadow 0.2s;
+}
+
+.task-card:hover {
+  background-color: hsl(var(--muted) / 0.3);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+/* Estilos para prioridades */
+.priority-high {
+  @apply bg-red-100 text-red-800;
+}
+
+.priority-medium {
+  @apply bg-yellow-100 text-yellow-800;
+}
+
+.priority-low {
+  @apply bg-green-100 text-green-800;
+}
+
 @layer base {
   * {
     @apply border-border;
