@@ -95,19 +95,26 @@ app.use((req, res, next) => {
   // Try to serve the app on port 5000 first, fallback to other ports if needed
   const tryPort = (port: number): Promise<number> => {
     return new Promise((resolve, reject) => {
-      server.listen({
+      // Ensure the server isn't already listening
+      if (server.listening) {
+        server.close();
+      }
+      
+      const serverInstance = server.listen({
         port,
         host: "0.0.0.0",
         reusePort: true,
-      })
-      .on('listening', () => {
+      });
+      
+      serverInstance.on('listening', () => {
         log(`serving on port ${port}`);
         resolve(port);
-      })
-      .on('error', (err: any) => {
+      });
+      
+      serverInstance.on('error', (err: any) => {
         if (err.code === 'EADDRINUSE') {
           log(`Port ${port} is in use, trying ${port + 1}...`);
-          server.close();
+          // Don't need to close - it didn't successfully listen
           resolve(tryPort(port + 1));
         } else {
           reject(err);
