@@ -10,7 +10,7 @@
  */
 
 import express from 'express';
-import { db } from './storage'; // Corregido para usar db
+import { storage } from './storage'; // Importamos storage en lugar de db
 import { InsertProject, InsertTask, insertProjectSchema, insertTaskSchema, projects, tasks, users } from '../shared/schema';
 import { and, eq } from 'drizzle-orm';
 import * as auth from './auth'; // Importamos todas las funciones de autenticación
@@ -42,7 +42,7 @@ router.get('/user', (req, res) => {
 // Proyectos
 router.get('/projects', async (req, res) => {
   try {
-    const allProjects = await db.select().from(projects);
+    const allProjects = await storage.getProjects();
     res.json(allProjects);
   } catch (error) {
     console.error('Error fetching projects:', error);
@@ -53,8 +53,8 @@ router.get('/projects', async (req, res) => {
 router.post('/projects', async (req, res) => {
   try {
     const projectData = insertProjectSchema.parse(req.body);
-    const newProject = await db.insert(projects).values(projectData).returning();
-    res.status(201).json(newProject[0]);
+    const newProject = await storage.createProject(projectData);
+    res.status(201).json(newProject);
   } catch (error) {
     console.error('Error creating project:', error);
     res.status(400).json({ error: error.issues || 'Error creating project' });
@@ -64,13 +64,13 @@ router.post('/projects', async (req, res) => {
 router.get('/projects/:id', async (req, res) => {
   try {
     const projectId = parseInt(req.params.id);
-    const project = await db.select().from(projects).where(eq(projects.id, projectId));
+    const project = await storage.getProject(projectId);
 
-    if (project.length === 0) {
+    if (!project) {
       return res.status(404).json({ error: 'Project not found' });
     }
 
-    res.json(project[0]);
+    res.json(project);
   } catch (error) {
     console.error('Error fetching project:', error);
     res.status(500).json({ error: 'Error fetching project' });
@@ -81,22 +81,17 @@ router.get('/projects/:id', async (req, res) => {
 router.get('/projects/:id/tasks', async (req, res) => {
   try {
     const projectId = parseInt(req.params.id);
-    const projectTasks = await db.select()
-      .from(tasks)
-      .where(eq(tasks.projectId, projectId));
+    const projectTasks = await storage.getTasks(projectId);
 
     // Obtener información de los usuarios asignados
     const tasksWithAssignees = await Promise.all(projectTasks.map(async (task) => {
       if (task.assigneeId) {
-        const assignee = await db.select()
-          .from(users)
-          .where(eq(users.id, task.assigneeId))
-          .limit(1);
+        const assignee = await storage.getUser(task.assigneeId);
 
-        if (assignee.length > 0) {
+        if (assignee) {
           return {
             ...task,
-            assigneeName: assignee[0].username
+            assigneeName: assignee.username
           };
         }
       }
@@ -115,11 +110,9 @@ router.post('/projects/:id/tasks', async (req, res) => {
     const projectId = parseInt(req.params.id);
 
     // Verificar que el proyecto existe
-    const project = await db.select()
-      .from(projects)
-      .where(eq(projects.id, projectId));
+    const project = await storage.getProject(projectId);
 
-    if (project.length === 0) {
+    if (!project) {
       return res.status(404).json({ error: 'Project not found' });
     }
 
@@ -129,24 +122,21 @@ router.post('/projects/:id/tasks', async (req, res) => {
       projectId
     });
 
-    const newTask = await db.insert(tasks).values(taskData).returning();
+    const newTask = await storage.createTask(taskData);
 
     // Si hay un asignado, obtener su información
-    if (newTask[0].assigneeId) {
-      const assignee = await db.select()
-        .from(users)
-        .where(eq(users.id, newTask[0].assigneeId))
-        .limit(1);
+    if (newTask.assigneeId) {
+      const assignee = await storage.getUser(newTask.assigneeId);
 
-      if (assignee.length > 0) {
+      if (assignee) {
         return res.json({
-          ...newTask[0],
-          assigneeName: assignee[0].username
+          ...newTask,
+          assigneeName: assignee.username
         });
       }
     }
 
-    res.json(newTask[0]);
+    res.json(newTask);
   } catch (error) {
     console.error('Error creating task:', error);
     res.status(400).json({ error: error.issues || 'Error creating task' });
@@ -158,21 +148,16 @@ router.put('/tasks/:id', async (req, res) => {
     const taskId = parseInt(req.params.id);
 
     // Verificar que la tarea existe
-    const existingTask = await db.select()
-      .from(tasks)
-      .where(eq(tasks.id, taskId));
+    const existingTask = await storage.getTask(taskId);
 
-    if (existingTask.length === 0) {
+    if (!existingTask) {
       return res.status(404).json({ error: 'Task not found' });
     }
 
     // Actualizar la tarea
-    const updatedTask = await db.update(tasks)
-      .set(req.body)
-      .where(eq(tasks.id, taskId))
-      .returning();
+    const updatedTask = await storage.updateTask(taskId, req.body);
 
-    res.json(updatedTask[0]);
+    res.json(updatedTask);
   } catch (error) {
     console.error('Error updating task:', error);
     res.status(400).json({ error: error.issues || 'Error updating task' });
@@ -182,9 +167,8 @@ router.put('/tasks/:id', async (req, res) => {
 // Usuarios
 router.get('/users', async (req, res) => {
   try {
-    const allUsers = await db.select()
-      .from(users);
-
+    const allUsers = await storage.getUsers();
+    
     res.json(allUsers);
   } catch (error) {
     console.error('Error fetching users:', error);
