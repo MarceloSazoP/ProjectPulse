@@ -47,7 +47,7 @@ export default function Dashboard() {
         </h1>
 
         {view === 'projects' && (
-          <ProjectManagement />
+          <ProjectManagement onViewChange={setView} />
         )}
 
         {view === 'users' && user?.role === 'admin' && (
