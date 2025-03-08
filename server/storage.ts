@@ -1,4 +1,3 @@
-
 /**
  * Storage Service
  * 
@@ -7,6 +6,7 @@
  */
 
 import { InsertProject, InsertTask, Project, Task, Team, User } from '../shared/schema';
+import session from 'express-session';
 
 // Datos de ejemplo para desarrollo
 let mockProjects: Project[] = [
@@ -110,7 +110,27 @@ let mockTeams: Team[] = [
 ];
 
 // Variable para simular el sessionStore
-const sessionStore = {};
+// Create a proper session store implementation
+class MemoryStore extends session.Store {
+  private sessions: Record<string, any> = {};
+
+  get(sid: string, callback: (err: any, session?: any) => void): void {
+    const sessionData = this.sessions[sid];
+    callback(null, sessionData);
+  }
+
+  set(sid: string, session: any, callback?: (err?: any) => void): void {
+    this.sessions[sid] = session;
+    if (callback) callback();
+  }
+
+  destroy(sid: string, callback?: (err?: any) => void): void {
+    delete this.sessions[sid];
+    if (callback) callback();
+  }
+}
+
+const sessionStore = new MemoryStore();
 
 // Implementación para desarrollo
 export const storage = {
@@ -271,14 +291,14 @@ export const storage = {
     // PRODUCCIÓN: Descomentar para usar la conexión real a la base de datos
     // const [newUser] = await db.insert(users).values(userData).returning();
     // return newUser;
-    
+
     const newUser = {
       ...userData,
       id: mockUsers.length + 1,
       departmentId: 1,
       profileId: 1
     } as User;
-    
+
     mockUsers.push(newUser);
     return newUser;
   }
