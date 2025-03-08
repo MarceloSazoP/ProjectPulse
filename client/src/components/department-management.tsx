@@ -31,13 +31,16 @@ export default function DepartmentManagement() {
   const queryClient = useQueryClient();
   const [editingId, setEditingId] = useState<number | null>(null);
 
-  const { data: departments = [], isLoading } = useQuery({
+  const { data, isLoading } = useQuery({
     queryKey: ["departments"],
     queryFn: async () => {
       const response = await axios.get("/api/departments");
       return response.data;
     },
   });
+  
+  // Asegurarse que departments sea siempre un array
+  const departments = Array.isArray(data) ? data : [];
 
   const form = useForm({
     resolver: zodResolver(departmentSchema),
