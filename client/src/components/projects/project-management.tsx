@@ -72,8 +72,7 @@ export default function ProjectManagement({ onViewChange }: ProjectManagementPro
       description: "",
       status: "planning",
       startDate: new Date().toISOString().split('T')[0],
-      endDate: "",
-      budget: 0,
+      endDate: new Date(new Date().setDate(new Date().getDate() + 30)).toISOString().split('T')[0],
     },
   });
 
@@ -250,8 +249,7 @@ export default function ProjectManagement({ onViewChange }: ProjectManagementPro
                 description: "",
                 status: "planning",
                 startDate: new Date().toISOString().split('T')[0],
-                endDate: "",
-                budget: 0,
+                endDate: new Date(new Date().setDate(new Date().getDate() + 30)).toISOString().split('T')[0],
               });
             }}>
               <Plus className="mr-2 h-4 w-4" /> Nuevo Proyecto

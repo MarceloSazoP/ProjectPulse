@@ -71,8 +71,18 @@ export const teamMembers = pgTable("team_members", {
 
 // Custom insert schemas with proper date handling
 export const insertProjectSchema = createInsertSchema(projects, {
-  startDate: z.coerce.date().transform(date => date.toISOString()),
-  endDate: z.coerce.date().transform(date => date.toISOString()),
+  startDate: z.coerce.date().transform(date => {
+    if (!(date instanceof Date) || isNaN(date.getTime())) {
+      throw new Error("Invalid start date");
+    }
+    return date.toISOString();
+  }),
+  endDate: z.coerce.date().transform(date => {
+    if (!(date instanceof Date) || isNaN(date.getTime())) {
+      throw new Error("Invalid end date");
+    }
+    return date.toISOString();
+  }),
 });
 
 export const insertTaskSchema = createInsertSchema(tasks, {
