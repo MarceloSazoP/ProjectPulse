@@ -92,40 +92,20 @@ app.use((req, res, next) => {
     serveStatic(app);
   }
 
-  // Try to serve the app on port 5000 first, fallback to other ports if needed
-  const tryPort = (port: number): Promise<number> => {
-    return new Promise((resolve, reject) => {
-      // Ensure the server isn't already listening
-      if (server.listening) {
-        server.close();
-      }
-      
-      const serverInstance = server.listen({
-        port,
-        host: "0.0.0.0",
-        reusePort: true,
-      });
-      
-      serverInstance.on('listening', () => {
-        log(`serving on port ${port}`);
-        resolve(port);
-      });
-      
-      serverInstance.on('error', (err: any) => {
-        if (err.code === 'EADDRINUSE') {
-          log(`Port ${port} is in use, trying ${port + 1}...`);
-          // Don't need to close - it didn't successfully listen
-          resolve(tryPort(port + 1));
-        } else {
-          reject(err);
-        }
-      });
-    });
-  };
-
-  // Start with port 5000 and try alternative ports if needed
-  tryPort(5000).catch(err => {
+  // Serve the app only on port 5000
+  const PORT = 5000;
+  
+  server.listen({
+    port: PORT,
+    host: "0.0.0.0",
+    reusePort: true,
+  }, () => {
+    log(`serving on port ${PORT}`);
+  }).on('error', (err) => {
     log(`Failed to start server: ${err.message}`);
+    if (err.code === 'EADDRINUSE') {
+      log(`Port ${PORT} is already in use. Please make sure the port is available.`);
+    }
     process.exit(1);
   });
 })();
