@@ -4,9 +4,10 @@ import multer from "multer";
 import path from "path";
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
-import { registerRoutes } from "./routes";
+import router from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { seedAdminUser } from "./seed";
+import * as auth from './auth';
 
 // Get __dirname equivalent in ES module
 const __filename = fileURLToPath(import.meta.url);
@@ -65,7 +66,13 @@ app.use((req, res, next) => {
   // Seed admin user
   await seedAdminUser();
 
-  const server = await registerRoutes(app);
+  // Setup authentication
+  auth.setupAuth(app);
+  
+  // Register API routes
+  app.use('/api', router);
+  
+  const server = app.listen();
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;

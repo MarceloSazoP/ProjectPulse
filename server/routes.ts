@@ -10,7 +10,7 @@
  */
 
 import express from 'express';
-import { storage } from './storage'; // Importamos storage en lugar de db
+import { db } from './storage'; // Corregido para usar db
 import { InsertProject, InsertTask, insertProjectSchema, insertTaskSchema, projects, tasks, users } from '../shared/schema';
 import { and, eq } from 'drizzle-orm';
 import * as auth from './auth'; // Importamos todas las funciones de autenticación
