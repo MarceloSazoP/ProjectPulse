@@ -79,3 +79,35 @@ export const apiClient = {
     }
   }
 };
+import axios from 'axios';
+
+// URL del backend en producción
+const API_URL = 'https://tu-dominio.com/api';
+
+// Cliente axios configurado para producción
+export const apiClient = axios.create({
+  baseURL: API_URL,
+  withCredentials: true,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
+// Funciones de autenticación
+export const auth = {
+  login: async (username: string, password: string) => {
+    const response = await apiClient.post('/auth/login', { username, password });
+    return response.data;
+  },
+  logout: async () => {
+    await apiClient.post('/auth/logout');
+  },
+  getCurrentUser: async () => {
+    try {
+      const response = await apiClient.get('/auth/me');
+      return response.data;
+    } catch (error) {
+      return null;
+    }
+  }
+};
