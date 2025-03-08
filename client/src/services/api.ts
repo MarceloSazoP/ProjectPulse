@@ -1,38 +1,78 @@
-
 /**
  * API Service
  * 
- * Este archivo centraliza todas las llamadas a la API del backend.
- * Proporciona funciones para interactuar con los endpoints del servidor.
+ * Este servicio maneja todas las conexiones con el backend.
+ * Para desarrollo, utiliza datos mock. En producción, conecta con el backend real.
  */
 
-import axios from 'axios';
+// Tipos de usuario
+interface User {
+  id: number;
+  username: string;
+  role: string;
+}
 
-// Configurar la URL base del API según el entorno
-const API_URL = process.env.NODE_ENV === 'production' 
-  ? process.env.NEXT_PUBLIC_API_URL || '/api'
-  : 'http://localhost:5000/api';
+// Usuario ficticio para desarrollo
+const mockUser: User = {
+  id: 1,
+  username: 'admin',
+  role: 'admin'
+};
 
-// Configurar axios con la URL base
-const api = axios.create({
-  baseURL: API_URL,
-  headers: {
-    'Content-Type': 'application/json',
+// Servicio de API
+export const apiService = {
+  // Autenticación
+  login: async (username: string, password: string): Promise<User> => {
+    // PRODUCCIÓN: Descomentar para usar la conexión real al backend
+    // const response = await fetch('/api/login', {
+    //   method: 'POST',
+    //   headers: { 'Content-Type': 'application/json' },
+    //   body: JSON.stringify({ username, password }),
+    //   credentials: 'include'
+    // });
+    // if (!response.ok) throw new Error('Error de autenticación');
+    // return response.json();
+
+    // Simular una respuesta del servidor
+    return new Promise((resolve, reject) => {
+      setTimeout(() => {
+        if (username === 'admin' && password === 'admin123') {
+          resolve(mockUser);
+        } else {
+          reject(new Error('Credenciales incorrectas'));
+        }
+      }, 500);
+    });
   },
-  withCredentials: true, // Para enviar cookies en peticiones cross-origin
-});
 
-// Interceptor para manejar tokens de autenticación
-api.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem('auth_token');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
+  logout: async (): Promise<void> => {
+    // PRODUCCIÓN: Descomentar para usar la conexión real al backend
+    // const response = await fetch('/api/logout', {
+    //   method: 'POST',
+    //   credentials: 'include'
+    // });
+    // if (!response.ok) throw new Error('Error al cerrar sesión');
+
+    // En desarrollo, no hace nada
+    return Promise.resolve();
   },
-  (error) => Promise.reject(error)
-);
+
+  getCurrentUser: async (): Promise<User | null> => {
+    // PRODUCCIÓN: Descomentar para usar la conexión real al backend
+    // try {
+    //   const response = await fetch('/api/user', {
+    //     credentials: 'include'
+    //   });
+    //   if (!response.ok) return null;
+    //   return response.json();
+    // } catch (error) {
+    //   return null;
+    // }
+
+    // En desarrollo, siempre devuelve el usuario mock
+    return Promise.resolve(mockUser);
+  }
+};
 
 // Servicios para Proyectos
 export const projectService = {
@@ -121,38 +161,6 @@ export const taskService = {
   */
 };
 
-// Servicios para Usuarios
-export const userService = {
-  // PRODUCCIÓN: Descomentar estas funciones cuando estés listo para usarlas
-  /*
-  getAll: async () => {
-    const response = await api.get('/users');
-    return response.data;
-  },
-  
-  getCurrentUser: async () => {
-    const response = await api.get('/user');
-    return response.data;
-  },
-  
-  login: async (credentials: { username: string, password: string }) => {
-    const response = await api.post('/login', credentials);
-    if (response.data.token) {
-      localStorage.setItem('auth_token', response.data.token);
-    }
-    return response.data;
-  },
-  
-  register: async (userData: any) => {
-    const response = await api.post('/register', userData);
-    return response.data;
-  },
-  
-  logout: () => {
-    localStorage.removeItem('auth_token');
-  }
-  */
-};
 
 // Servicios para Equipos
 export const teamService = {
@@ -327,10 +335,38 @@ export const ganttService = {
   */
 };
 
+import axios from 'axios';
+
+// Configurar la URL base del API según el entorno
+const API_URL = process.env.NODE_ENV === 'production' 
+  ? process.env.NEXT_PUBLIC_API_URL || '/api'
+  : 'http://localhost:5000/api';
+
+// Configurar axios con la URL base
+const api = axios.create({
+  baseURL: API_URL,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  withCredentials: true, // Para enviar cookies en peticiones cross-origin
+});
+
+// Interceptor para manejar tokens de autenticación
+api.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('auth_token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
+
 export default {
   projectService,
   taskService,
-  userService,
+  apiService,
   teamService,
   kanbanService,
   ganttService,

@@ -1,83 +1,71 @@
-
 /**
- * Cliente API
+ * API Client
  * 
- * Un cliente HTTP simple para realizar solicitudes a la API.
- * Esta clase se utiliza en los componentes para comunicarse con el backend.
+ * Cliente para interactuar con el servicio de API.
+ * Provee métodos para autenticación y manejo de sesión.
  */
 
-// PRODUCCIÓN: Descomentar y configurar para uso en producción
-/*
-const API_BASE_URL = process.env.NODE_ENV === 'production' 
-  ? process.env.NEXT_PUBLIC_API_URL || '/api'
-  : 'http://localhost:5000/api';
+import { apiService } from '../services/api';
 
-export async function apiRequest(
-  method: 'GET' | 'POST' | 'PUT' | 'DELETE',
-  endpoint: string,
-  body?: any,
-  customHeaders?: Record<string, string>
-) {
-  const url = `${API_BASE_URL}${endpoint}`;
-  
-  const headers: HeadersInit = {
-    'Content-Type': 'application/json',
-    ...customHeaders
-  };
+// Estado de la aplicación
+let currentUser = null;
+const listeners = new Set<() => void>();
 
-  // Añadir token de autenticación si está disponible
-  const token = localStorage.getItem('auth_token');
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
-  }
+// Notificar a todos los componentes suscritos cuando el usuario cambia
+const notifyListeners = () => {
+  listeners.forEach(listener => listener());
+};
 
-  const options: RequestInit = {
-    method,
-    headers,
-    credentials: 'include',
-  };
-
-  if (body && (method === 'POST' || method === 'PUT')) {
-    options.body = JSON.stringify(body);
-  }
-
-  try {
-    const response = await fetch(url, options);
-    
-    // Si la respuesta no es exitosa, lanzar un error
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.message || `Error ${response.status}: ${response.statusText}`);
+export const apiClient = {
+  // Autenticación
+  login: async (username: string, password: string) => {
+    try {
+      currentUser = await apiService.login(username, password);
+      notifyListeners();
+      return currentUser;
+    } catch (error) {
+      console.error('Error de login:', error);
+      throw error;
     }
-    
-    // Para respuestas 204 No Content, no intentar parsear JSON
-    if (response.status === 204) {
-      return { ok: true };
-    }
-    
-    return response;
-  } catch (error) {
-    console.error(`API Request Error (${method} ${endpoint}):`, error);
-    throw error;
-  }
-}
-*/
+  },
 
-// Implementación simulada para desarrollo
-export async function apiRequest(
-  method: 'GET' | 'POST' | 'PUT' | 'DELETE',
-  endpoint: string,
-  body?: any,
-  customHeaders?: Record<string, string>
-) {
-  console.log(`[DEV] API Request: ${method} ${endpoint}`);
-  if (body) {
-    console.log('[DEV] Request body:', body);
+  logout: async () => {
+    try {
+      await apiService.logout();
+      currentUser = null;
+      notifyListeners();
+    } catch (error) {
+      console.error('Error al cerrar sesión:', error);
+      throw error;
+    }
+  },
+
+  getUser: () => currentUser,
+
+  // Verifica si el usuario está autenticado
+  isAuthenticated: () => !!currentUser,
+
+  // Verifica el rol del usuario
+  hasRole: (role: string) => currentUser?.role === role,
+
+  // Método para inicializar el estado del usuario al cargar la app
+  initAuth: async () => {
+    try {
+      currentUser = await apiService.getCurrentUser();
+      notifyListeners();
+    } catch (error) {
+      console.error('Error al inicializar la autenticación:', error);
+    }
+  },
+
+  // Suscribirse a los cambios de usuario
+  subscribe: (listener: () => void) => {
+    listeners.add(listener);
+    return () => {
+      listeners.delete(listener);
+    };
   }
-  
-  // Simular una respuesta exitosa
-  return new Response(JSON.stringify({ success: true, message: 'API mock response' }), {
-    status: 200,
-    headers: { 'Content-Type': 'application/json' }
-  });
-}
+};
+
+// Inicializar la autenticación al importar el módulo
+apiClient.initAuth();

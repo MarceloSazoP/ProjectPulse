@@ -252,5 +252,27 @@ export const storage = {
     // PRODUCCIÓN: Descomentar para usar la conexión real a la base de datos
     // return db.select().from(users).where(eq(users.id, id)).then(res => res[0] || undefined);
     return mockUsers.find(u => u.id === id);
+  },
+
+  getUserByUsername: async (username: string): Promise<User | undefined> => {
+    // PRODUCCIÓN: Descomentar para usar la conexión real a la base de datos
+    // return db.select().from(users).where(eq(users.username, username)).then(res => res[0] || undefined);
+    return mockUsers.find(u => u.username === username);
+  },
+
+  createUser: async (userData: any): Promise<User> => {
+    // PRODUCCIÓN: Descomentar para usar la conexión real a la base de datos
+    // const [newUser] = await db.insert(users).values(userData).returning();
+    // return newUser;
+    
+    const newUser = {
+      ...userData,
+      id: mockUsers.length + 1,
+      departmentId: 1,
+      profileId: 1
+    } as User;
+    
+    mockUsers.push(newUser);
+    return newUser;
   }
 };
