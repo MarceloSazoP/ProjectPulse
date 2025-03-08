@@ -1,10 +1,22 @@
+/**
+ * API ROUTES CONFIGURATION
+ * 
+ * Este archivo define todas las rutas de la API del backend.
+ * 
+ * PRODUCCIÓN:
+ * 1. Importar correctamente la configuración de la base de datos
+ * 2. Asegurar que las rutas de autenticación estén correctamente configuradas
+ * 3. Considerar agregar rate limiting para prevenir ataques DoS
+ */
+
 import express from 'express';
-import { db } from './storage';
+import { storage } from './storage'; // Importamos storage en lugar de db
 import { InsertProject, InsertTask, insertProjectSchema, insertTaskSchema, projects, tasks, users } from '../shared/schema';
 import { and, eq } from 'drizzle-orm';
-import { setupAuth } from './auth';
+import * as auth from './auth'; // Importamos todas las funciones de autenticación
 
-// Create auth helpers
+// Middleware de autenticación - Verifica que el usuario esté autenticado
+// PRODUCCIÓN: Este middleware debe validar correctamente los tokens JWT o sesiones
 const requireAuth = (req, res, next) => {
   if (!req.isAuthenticated()) {
     return res.status(401).json({ error: 'Unauthorized' });
@@ -12,6 +24,7 @@ const requireAuth = (req, res, next) => {
   next();
 };
 
+// Crear router de Express
 const router = express.Router();
 
 // Rutas públicas
