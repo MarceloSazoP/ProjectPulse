@@ -17,7 +17,7 @@ import { Loader2, Plus, Edit, Search, KanbanSquare, GanttChartSquare, Download, 
 import { useState } from "react";
 import ProjectStorage from "./project-storage";
 import { BreadcrumbNav } from "@/components/navigation/breadcrumb";
-import { useProjectStore } from "@/store/project";
+import { useProjectStore } from "../../store/projects";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 
