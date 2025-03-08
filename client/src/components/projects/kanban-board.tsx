@@ -1,392 +1,326 @@
-import { useQuery, useMutation } from "@tanstack/react-query";
-import { Task, InsertTask, insertTaskSchema } from "@shared/schema";
-import { Card, CardContent } from "@/components/ui/card";
+import React, { useState, useEffect } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
+import { DragDropContext, Draggable, Droppable } from '@hello-pangea/dnd';
+import { Button } from '../ui/button';
+import { Plus, MoreHorizontal } from 'lucide-react';
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-  DialogDescription,
-} from "@/components/ui/dialog";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { useProjectStore } from "@/store/projects";
-import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Loader2, Plus, Calendar, Edit2 } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { format } from "date-fns";
-import { useState } from "react";
-import { BreadcrumbNav } from "@/components/navigation/breadcrumb"; // Added import
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '../ui/dropdown-menu';
+import { Input } from '../ui/input';
+import { apiRequest } from '../../lib/api-request';
+import { useToast } from '../../hooks/use-toast';
 
-interface KanbanBoardProps {
-  projectId: number;
+// Definir interfaces para tipado
+interface Task {
+  id: number;
+  title: string;
+  description: string;
+  status: string;
+  priority: string;
+  assigneeId?: number;
 }
 
-const TASK_STATUS = ["backlog", "todo", "todo_today", "in_progress", "end"] as const;
-const STATUS_LABELS = {
-  backlog: "Backlog",
-  todo: "To Do",
-  todo_today: "To Do Today",
-  in_progress: "In Progress",
-  end: "End"
-};
+interface Column {
+  id: string;
+  title: string;
+  tasks: Task[];
+}
 
-const STATUS_COLORS = {
-  backlog: "bg-slate-100 hover:bg-slate-200",
-  todo: "bg-blue-50 hover:bg-blue-100",
-  todo_today: "bg-yellow-50 hover:bg-yellow-100",
-  in_progress: "bg-purple-50 hover:bg-purple-100",
-  end: "bg-green-50 hover:bg-green-100"
-};
+interface KanbanData {
+  columns: Record<string, Column>;
+  columnOrder: string[];
+}
 
-const PRIORITY_COLORS = {
-  low: "bg-blue-100 text-blue-700",
-  medium: "bg-yellow-100 text-yellow-700",
-  high: "bg-red-100 text-red-700"
-};
-
-export default function KanbanBoard({ projectId }: KanbanBoardProps) {
+export default function KanbanBoard({ projectId }: { projectId: number }) {
   const { toast } = useToast();
-  const { setIsDraggingTask, setDraggedTask, selectedProject } = useProjectStore(); // Added selectedProject
-  const [editingTask, setEditingTask] = useState<Task | null>(null);
-
-  const { data: tasks = [], isLoading } = useQuery<Task[]>({
-    queryKey: ["/api/projects", projectId, "tasks"],
+  const [kanbanData, setKanbanData] = useState<KanbanData>({
+    columns: {
+      'col-1': {
+        id: 'col-1',
+        title: 'Por hacer',
+        tasks: [],
+      },
+      'col-2': {
+        id: 'col-2',
+        title: 'En progreso',
+        tasks: [],
+      },
+      'col-3': {
+        id: 'col-3',
+        title: 'Completado',
+        tasks: [],
+      },
+    },
+    columnOrder: ['col-1', 'col-2', 'col-3'],
   });
+  const [newTaskTitle, setNewTaskTitle] = useState('');
+  const [addingToColumn, setAddingToColumn] = useState<string | null>(null);
 
-  const form = useForm<InsertTask>({
-    resolver: zodResolver(insertTaskSchema),
-    defaultValues: {
-      name: "",
-      description: "",
-      status: "todo",
-      priority: "medium",
-      projectId,
-    },
-  });
+  useEffect(() => {
+    // Cargar tareas del proyecto
+    const fetchTasks = async () => {
+      try {
+        const response = await apiRequest('GET', `/api/projects/${projectId}/tasks`);
+        const tasks = await response.json();
 
-  const createTaskMutation = useMutation({
-    mutationFn: async (data: InsertTask) => {
-      const res = await apiRequest("POST", "/api/tasks", data);
-      return res.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/projects", projectId, "tasks"] });
-      toast({
-        title: "Task created",
-        description: "New task has been created successfully",
+        // Organizar tareas en columnas según su estado
+        const updatedColumns = { ...kanbanData.columns };
+
+        // Resetear las tareas en todas las columnas
+        Object.keys(updatedColumns).forEach(columnId => {
+          updatedColumns[columnId].tasks = [];
+        });
+
+        // Distribuir tareas en las columnas correspondientes
+        tasks.forEach((task: Task) => {
+          if (task.status === 'not_started') {
+            updatedColumns['col-1'].tasks.push(task);
+          } else if (task.status === 'in_progress') {
+            updatedColumns['col-2'].tasks.push(task);
+          } else if (task.status === 'completed') {
+            updatedColumns['col-3'].tasks.push(task);
+          }
+        });
+
+        setKanbanData({
+          ...kanbanData,
+          columns: updatedColumns
+        });
+      } catch (error) {
+        console.error('Error al cargar tareas:', error);
+        toast({
+          title: 'Error',
+          description: 'No se pudieron cargar las tareas del proyecto',
+          variant: 'destructive',
+        });
+      }
+    };
+
+    if (projectId) {
+      fetchTasks();
+    }
+  }, [projectId]);
+
+  const onDragEnd = async (result: any) => {
+    const { destination, source, draggableId } = result;
+
+    // Si no hay destino o el destino es el mismo que el origen, no hacer nada
+    if (!destination || 
+        (destination.droppableId === source.droppableId && 
+         destination.index === source.index)) {
+      return;
+    }
+
+    // Encontrar la columna de origen y destino
+    const sourceColumn = kanbanData.columns[source.droppableId];
+    const destColumn = kanbanData.columns[destination.droppableId];
+
+    // Encontrar la tarea que se está moviendo
+    const task = sourceColumn.tasks[source.index];
+
+    // Crear copias para actualizar el estado
+    const newSourceTasks = Array.from(sourceColumn.tasks);
+    newSourceTasks.splice(source.index, 1);
+
+    const newDestTasks = Array.from(destColumn.tasks);
+    newDestTasks.splice(destination.index, 0, task);
+
+    // Actualizar el estado local
+    const newColumns = {
+      ...kanbanData.columns,
+      [sourceColumn.id]: {
+        ...sourceColumn,
+        tasks: newSourceTasks
+      },
+      [destColumn.id]: {
+        ...destColumn,
+        tasks: newDestTasks
+      }
+    };
+
+    setKanbanData({
+      ...kanbanData,
+      columns: newColumns
+    });
+
+    // Determinar el nuevo estado de la tarea según la columna de destino
+    let newStatus;
+    if (destination.droppableId === 'col-1') newStatus = 'not_started';
+    else if (destination.droppableId === 'col-2') newStatus = 'in_progress';
+    else if (destination.droppableId === 'col-3') newStatus = 'completed';
+
+    // Actualizar en la base de datos
+    try {
+      await apiRequest('PATCH', `/api/projects/${projectId}/tasks/${task.id}`, {
+        status: newStatus
       });
-      form.reset();
-    },
-    onError: (error: Error) => {
+    } catch (error) {
+      console.error('Error al actualizar tarea:', error);
       toast({
-        title: "Failed to create task",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
-
-  const updateTaskMutation = useMutation({
-    mutationFn: async ({ taskId, data }: { taskId: number; data: Partial<Task> }) => {
-      const res = await apiRequest("PUT", `/api/tasks/${taskId}`, data);
-      return res.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/projects", projectId, "tasks"] });
-      toast({
-        title: "Task updated",
-        description: "Task has been updated successfully",
-      });
-      setEditingTask(null);
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Failed to update task",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
-
-  const handleDragStart = (task: Task) => {
-    setIsDraggingTask(true);
-    setDraggedTask(task);
-  };
-
-  const handleDragEnd = () => {
-    setIsDraggingTask(false);
-    setDraggedTask(null);
-  };
-
-  const handleDrop = (status: string, task: Task) => {
-    if (task.status !== status) {
-      updateTaskMutation.mutate({ 
-        taskId: task.id, 
-        data: { status } 
+        title: 'Error',
+        description: 'No se pudo actualizar el estado de la tarea',
+        variant: 'destructive',
       });
     }
   };
 
-  const startEdit = (task: Task) => {
-    setEditingTask(task);
-    form.reset({
-      name: task.name,
-      description: task.description || "",
-      status: task.status,
-      priority: task.priority,
-      dueDate: task.dueDate ? new Date(task.dueDate).toISOString().split('T')[0] : undefined,
-      projectId: task.projectId,
-    });
+  const handleAddTask = async (columnId: string) => {
+    if (!newTaskTitle.trim()) return;
+
+    // Determinar el estado según la columna
+    let status;
+    if (columnId === 'col-1') status = 'not_started';
+    else if (columnId === 'col-2') status = 'in_progress';
+    else status = 'completed';
+
+    try {
+      const response = await apiRequest('POST', `/api/projects/${projectId}/tasks`, {
+        title: newTaskTitle,
+        description: '',
+        status,
+        priority: 'medium'
+      });
+
+      if (response.ok) {
+        const newTask = await response.json();
+
+        // Actualizar el estado local
+        const column = kanbanData.columns[columnId];
+        const updatedColumn = {
+          ...column,
+          tasks: [...column.tasks, newTask]
+        };
+
+        setKanbanData({
+          ...kanbanData,
+          columns: {
+            ...kanbanData.columns,
+            [columnId]: updatedColumn
+          }
+        });
+
+        // Limpiar el campo de entrada
+        setNewTaskTitle('');
+        setAddingToColumn(null);
+
+        toast({
+          title: 'Tarea creada',
+          description: 'La tarea se ha creado correctamente',
+        });
+      }
+    } catch (error) {
+      console.error('Error al crear tarea:', error);
+      toast({
+        title: 'Error',
+        description: 'No se pudo crear la tarea',
+        variant: 'destructive',
+      });
+    }
   };
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
-
-  const tasksByStatus = TASK_STATUS.reduce((acc, status) => {
-    acc[status] = tasks.filter((task) => task.status === status) || [];
-    return acc;
-  }, {} as Record<string, Task[]>);
-
   return (
-    <div className="space-y-4">
-      <BreadcrumbNav items={[
-        { label: "Projects", href: "/projects" },
-        { label: selectedProject?.name || "Project", href: `/projects/${selectedProject?.id}` },
-        { label: "Kanban Board" }
-      ]} /> {/* Added BreadcrumbNav */}
-      <div className="flex justify-between items-center">
-        <h3 className="text-lg font-medium">Tasks</h3>
-        <Dialog>
-          <DialogTrigger asChild>
-            <Button size="sm">
-              <Plus className="h-4 w-4 mr-2" />
-              Add Task
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>
-                {editingTask ? "Edit Task" : "Create New Task"}
-              </DialogTitle>
-              <DialogDescription>
-                {editingTask
-                  ? "Update task details and status"
-                  : "Add a new task to the project"}
-              </DialogDescription>
-            </DialogHeader>
-            <Form {...form}>
-              <form
-                onSubmit={form.handleSubmit((data) => 
-                  editingTask 
-                    ? updateTaskMutation.mutate({ taskId: editingTask.id, data })
-                    : createTaskMutation.mutate(data)
-                )}
-                className="space-y-4"
-              >
-                <FormField
-                  control={form.control}
-                  name="name"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Task Name</FormLabel>
-                      <FormControl>
-                        <Input {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="description"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Description</FormLabel>
-                      <FormControl>
-                        <Input {...field} value={field.value || ''} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="status"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Status</FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        defaultValue={field.value}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select status" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {TASK_STATUS.map((status) => (
-                            <SelectItem key={status} value={status}>
-                              {STATUS_LABELS[status]}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="priority"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Priority</FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        defaultValue={field.value}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select priority" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="low">Low</SelectItem>
-                          <SelectItem value="medium">Medium</SelectItem>
-                          <SelectItem value="high">High</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="dueDate"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Due Date</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="date"
-                          {...field}
-                          value={field.value || ''}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <Button
-                  type="submit"
-                  className="w-full"
-                  disabled={createTaskMutation.isPending || updateTaskMutation.isPending}
-                >
-                  {(createTaskMutation.isPending || updateTaskMutation.isPending) && (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  )}
-                  {editingTask ? "Update Task" : "Create Task"}
-                </Button>
-              </form>
-            </Form>
-          </DialogContent>
-        </Dialog>
-      </div>
+    <div className="p-4">
+      <DragDropContext onDragEnd={onDragEnd}>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {kanbanData.columnOrder.map(columnId => {
+            const column = kanbanData.columns[columnId];
 
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-        {TASK_STATUS.map((status) => (
-          <div
-            key={status}
-            className="flex flex-col space-y-2"
-            onDragOver={(e) => e.preventDefault()}
-            onDrop={(e) => {
-              e.preventDefault();
-              const draggedTask = useProjectStore.getState().draggedTask;
-              if (draggedTask) {
-                handleDrop(status, draggedTask);
-              }
-            }}
-          >
-            <div className="text-sm font-medium text-muted-foreground px-2 flex justify-between items-center">
-              <span>{STATUS_LABELS[status]}</span>
-              <span className="bg-background rounded-full px-2 py-1 text-xs">
-                {tasksByStatus[status].length}
-              </span>
-            </div>
-            <div className={`rounded-lg p-2 min-h-[150px] ${STATUS_COLORS[status]}`}>
-              {tasksByStatus[status].map((task) => (
-                <Card
-                  key={task.id}
-                  draggable
-                  onDragStart={() => handleDragStart(task)}
-                  onDragEnd={handleDragEnd}
-                  className="mb-2 cursor-move hover:shadow-md transition-shadow"
-                >
-                  <CardContent className="p-3">
-                    <div className="flex justify-between items-start gap-2">
-                      <div className="space-y-1">
-                        <div className="font-medium">{task.name}</div>
-                        {task.description && (
-                          <div className="text-sm text-muted-foreground">
-                            {task.description}
-                          </div>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <div className={`px-2 py-1 rounded text-xs font-medium ${PRIORITY_COLORS[task.priority]}`}>
-                          {task.priority}
-                        </div>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-6 w-6"
-                          onClick={() => startEdit(task)}
+            return (
+              <div key={columnId} className="bg-gray-50 rounded-lg p-4">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="font-medium">{column.title}</h3>
+                  <Button 
+                    size="sm" 
+                    variant="ghost" 
+                    onClick={() => setAddingToColumn(columnId)}
+                  >
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </div>
+
+                {addingToColumn === columnId && (
+                  <div className="mb-4 flex space-x-2">
+                    <Input
+                      placeholder="Título de la tarea"
+                      value={newTaskTitle}
+                      onChange={(e) => setNewTaskTitle(e.target.value)}
+                    />
+                    <Button onClick={() => handleAddTask(columnId)}>
+                      Añadir
+                    </Button>
+                  </div>
+                )}
+
+                <Droppable droppableId={columnId}>
+                  {(provided) => (
+                    <div
+                      {...provided.droppableProps}
+                      ref={provided.innerRef}
+                      className="min-h-[200px]"
+                    >
+                      {column.tasks.map((task, index) => (
+                        <Draggable
+                          key={task.id}
+                          draggableId={`task-${task.id}`}
+                          index={index}
                         >
-                          <Edit2 className="h-3 w-3" />
-                        </Button>
-                      </div>
+                          {(provided) => (
+                            <div
+                              ref={provided.innerRef}
+                              {...provided.draggableProps}
+                              {...provided.dragHandleProps}
+                              className="bg-white p-3 rounded-md mb-2 shadow-sm"
+                            >
+                              <div className="flex justify-between items-start">
+                                <h4 className="font-medium">{task.title}</h4>
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" size="sm">
+                                      <MoreHorizontal className="h-4 w-4" />
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end">
+                                    <DropdownMenuItem>Editar</DropdownMenuItem>
+                                    <DropdownMenuItem className="text-red-600">
+                                      Eliminar
+                                    </DropdownMenuItem>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              </div>
+                              {task.description && (
+                                <p className="text-sm text-gray-600 mt-1">{task.description}</p>
+                              )}
+                              <div className="mt-2 flex justify-between items-center">
+                                <span className={`text-xs px-2 py-1 rounded-full ${
+                                  task.priority === 'high' ? 'bg-red-100 text-red-800' :
+                                  task.priority === 'medium' ? 'bg-yellow-100 text-yellow-800' :
+                                  'bg-blue-100 text-blue-800'
+                                }`}>
+                                  {task.priority === 'high' ? 'Alta' :
+                                   task.priority === 'medium' ? 'Media' : 'Baja'}
+                                </span>
+                                {task.assigneeId && (
+                                  <div className="w-6 h-6 rounded-full bg-primary text-white flex items-center justify-center text-xs">
+                                    A
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          )}
+                        </Draggable>
+                      ))}
+                      {provided.placeholder}
                     </div>
-                    {task.dueDate && (
-                      <div className="flex items-center mt-2 text-xs text-muted-foreground">
-                        <Calendar className="h-3 w-3 mr-1" />
-                        {format(new Date(task.dueDate), 'MMM d, yyyy')}
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </div>
-        ))}
-      </div>
+                  )}
+                </Droppable>
+              </div>
+            );
+          })}
+        </div>
+      </DragDropContext>
     </div>
   );
 }
-
-
-// The BreadcrumbNav component is already imported elsewhere
